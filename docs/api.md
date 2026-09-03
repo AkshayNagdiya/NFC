@@ -1,0 +1,92 @@
+# API
+
+Base `/api`. Envelope: `{ success, data, requestId }` / `{ success:false, message, code, requestId }`.
+Auth: `POST /auth/login|refresh|logout`, `GET /auth/me`. All other routes require `Authorization: Bearer <access>`.
+Org isolation enforced in services via `orgFilter(req.auth)`.
+
+## Auth
+
+- `POST /api/auth/login` `{ email, password }` → `{ accessToken, refreshToken, user }` + httpOnly refresh cookie. 401 on bad credentials, 403 if disabled.
+- `POST /api/auth/refresh` `{ refreshToken }` → `{ accessToken }`. 401 if revoked/expired.
+- `POST /api/auth/logout` `{ refreshToken }?` → revokes session, clears cookie.
+- `GET /api/auth/me` → `{ auth: { userId, organizationId, role, permissions } }`.
+
+## Users (`users.read|create|update`)
+
+- `GET /api/users?page=&pageSize=&search=&role=&status=` — org-scoped, paginated. SUPER_ADMIN may pass `organizationId`.
+- `POST /api/users` `{ email, password, firstName, lastName, role, permissions[] }` — org pinned to token (explicit `organizationId` honored for SUPER_ADMIN only). 409 on duplicate email in org.
+- `GET /api/users/:id` — org-scoped; cross-org reads return 404 (no existence leak).
+- `PATCH /api/users/:id` `{ firstName?, lastName?, role?, permissions?, status? }` — cannot self-disable; only SUPER_ADMIN may grant SUPER_ADMIN.
+
+`passwordHash` is never serialized. User create/update/disable writes append-only audit records.
+
+## Bands
+
+- `GET /api/bands?search=&status=&type=&userId=` — org-scoped, paginated (`bands.read`).
+- `POST /api/bands` `{ nfcUid, type, bandId?, expiresAt?, assignedLocationId? }` — register as AVAILABLE (`bands.create`). 409 on duplicate UID.
+- `GET /api/bands/:id` — detail with populated user/location (`bands.read`).
+- `POST /api/bands/:id/assign` `{ userId, locationId? }` — AVAILABLE → ASSIGNED (`bands.assign`).
+- `POST /api/bands/:id/activate` — ASSIGNED → ACTIVE (`bands.assign`).
+- `POST /api/bands/:id/block` `{ reason }` / `POST /api/bands/:id/unblock` (`bands.block`).
+- `POST /api/bands/:id/mark-lost` / `/mark-damaged` (`bands.update`).
+- `POST /api/bands/:id/replace` `{ nfcUid, bandId?, reason }` — retires old to DECOMMISSIONED, issues linked ACTIVE band (`bands.replace`).
+- `POST /api/bands/:id/deactivate` — any live state → DECOMMISSIONED (`bands.update`).
+
+Illegal transitions return 409 `INVALID_STATE`. Every mutation writes an audit record.
+
+## NFC scanning
+
+- `POST /api/nfc/scan` `{ nfcUid, action, deviceId?, locationId?, gateId?, requestId? }` (`nfc.scan`).
+  Send `X-NFC-Adapter: bridge` when the UID arrived via nfc-bridge; anything else needs the bridge (501-style refusal).
+  - New scan → 201; duplicate inside the window → 200 `{ duplicate: true }`; same `requestId` → 200 `{ replay: true }`.
+  - Results: SUCCESS / DENIED / BLOCKED / LOST / EXPIRED / UNKNOWN / INVALID / ERROR.
+  - Side effects: CHECK_IN/OUT → attendance rows; ENTRY/EXIT/EVENT_CHECK_IN → access events; every scan → audit + `nfc.scan` socket event on `org:{id}`.
+- `GET /api/nfc/scans?nfcUid=&action=&result=&deviceId=&from=&to=` — immutable scan ledger (`nfc.scan`).
+
+## Attendance
+
+- `GET /api/attendance?date=&from=&to=&userId=&locationId=&status=` (`attendance.read`).
+- `POST /api/attendance/check-in` / `/check-out` `{ userId, bandId?, locationId?, at? }` (`attendance.manage`).
+  Late after org `attendanceLateAfter` (location tz); early checkout (>60 min before `attendanceDayEnd`) → EARLY_EXIT/HALF_DAY.
+- `POST /api/attendance/manual` `{ userId, date, checkInAt?, checkOutAt?, status?, remarks? }` (`attendance.manage`).
+- `PATCH /api/attendance/:id/correct` — audited correction with before/after (`attendance.manage`).
+
+## Access control
+
+- `GET /api/access/rules?gateId=&locationId=&status=` (`access.read`).
+- `POST /api/access/rules` `{ name, gateId?, locationId?, userIds[], userGroups[], days[], startTime, endTime, eventId?, bandStatuses[], effect, priority }` (`access.manage`).
+- `PATCH /api/access/rules/:id` (`access.manage`).
+- `GET /api/access/events?gateId=&locationId=&decision=&from=&to=` (`access.read`).
+- Evaluation: DENY-first by priority, then ALLOW; time/day in the location timezone; **no match → DENY**. EXIT is always allowed (recorded).
+
+## Wallets & transactions
+
+Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `$inc` — safe without replica-set transactions.
+
+- `GET /api/wallets/:userId` (`wallet.read`) — auto-opens a zero-balance wallet.
+- `POST /api/wallets/:userId/credit` `{ amountMinor, idempotencyKey?, reason?, method? }` (`wallet.manage`).
+- `POST /api/wallets/:userId/debit` (`wallet.manage`) — 409 `INSUFFICIENT_BALANCE` on overdraft.
+- `POST /api/wallets/:userId/adjust` `{ deltaMinor, idempotencyKey, reason }` (`wallet.manage`).
+- `POST /api/wallets/:userId/freeze|unfreeze` (`wallet.manage`).
+- `POST /api/wallets/refund` `{ transactionId, idempotencyKey?, reason }` (`transactions.manage`) — new REFUND row; double refunds rejected.
+- `GET /api/transactions?userId=&type=&status=&from=&to=` (`transactions.read`).
+- NFC `POST /api/nfc/scan` with `action: PAYMENT` + `amountMinor` debits synchronously; broke/frozen wallets → DENIED scan.
+
+## Devices, locations, events
+
+- `GET /api/devices?status=&locationId=` (`devices.read`) — `health` is derived from heartbeats (stale > 5 min → OFFLINE).
+- `POST /api/devices`, `PATCH /api/devices/:id` (`devices.manage`); `GET /api/devices/:id/stats` (24h scans/failed).
+- `POST /api/devices/:id/heartbeat` (`devices.manage` or `nfc.scan` so kiosks can ping).
+- `GET /api/locations`, `POST /api/locations`, `PATCH /api/locations/:id`, `GET /api/locations/tree` (`locations.read|manage`).
+- `POST /api/locations/zones`, `POST /api/locations/gates`, `PATCH /api/locations/gates/:id` (`locations.manage`).
+- `GET /api/events?status=&upcoming=`, `POST /api/events`, `PATCH /api/events/:id`, `POST /api/events/:id/check-in { userId }` (`access.read|manage`). Capacity enforced atomically; NFC `EVENT_CHECK_IN` with `metadata.eventId` fills the same counter.
+
+## Notifications, audit, settings, reports
+
+- `GET /api/notifications?unreadOnly=&type=&priority=` — own + org-wide; returns `unread` count. Any authenticated user.
+- `POST /api/notifications/:id/read`, `POST /api/notifications/read-all`.
+- Server-side fan-out: band blocked/lost (org HIGH + holder HIGH on refused scans), wallet low-balance (user MEDIUM, max one unread/day). All emit `notification` socket events.
+- `GET /api/audit-logs?action=&entityType=&entityId=&actorId=&from=&to=` (`audit.read`). Append-only — no write routes exist.
+- `GET /api/settings` (any auth), `PUT /api/settings` (`settings.manage`) — timezone, late/early times, dupe window; audited.
+- `GET /api/reports/summary?from=&to=` — bands/scans/attendance/devices splits, active users, transaction volumes (`reports.read`).
+- `GET /api/reports/export?domain=bands|scans|attendance|access-events|transactions|audit&from=&to=` — CSV download, 5,000-row cap.

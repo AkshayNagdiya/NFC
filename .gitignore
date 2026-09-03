@@ -1,0 +1,30 @@
+# Deps
+node_modules/
+dist/
+build/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Vite
+client/dist/
+client/.vite/
+
+# TS build info
+*.tsbuildinfo
+
+# Test coverage
+coverage/

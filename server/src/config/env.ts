@@ -1,0 +1,64 @@
+import path from 'node:path';
+import dotenv from 'dotenv';
+import { z } from 'zod';
+
+// Load .env from current directory, parent directory, or server directory
+const cwd = process.cwd();
+dotenv.config();
+dotenv.config({ path: path.resolve(cwd, '.env') });
+dotenv.config({ path: path.resolve(cwd, 'server', '.env') });
+dotenv.config({ path: path.resolve(cwd, '..', '.env') });
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().default(4000),
+  MONGODB_URI: z.string().default('mongodb://127.0.0.1:27017/nfc_band_management'),
+  USE_MEMORY_DB: z.coerce.boolean().default(false),
+  SEED_DEMO: z.coerce.boolean().default(true),
+  JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
+  JWT_REFRESH_SECRET: z.string().min(16).default('dev-refresh-secret-change-me-32-chars'),
+  JWT_ACCESS_TTL: z.string().default('15m'),
+  JWT_REFRESH_TTL: z.string().default('30d'),
+  CLIENT_URL: z.string().default('http://localhost:5173'),
+  CORS_ORIGINS: z.string().default('http://localhost:5173'),
+  NFC_BRIDGE_URL: z.string().default('http://localhost:8787'),
+  NFC_READER_MODE: z.enum(['keyboard', 'pcsc', 'serial', 'network', 'vendor', 'bridge']).default('keyboard'),
+  NFC_DUP_WINDOW_MS: z.coerce.number().default(3000),
+  BCRYPT_ROUNDS: z.coerce.number().min(4).max(14).default(12),
+  LOG_LEVEL: z.string().default('info'),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+function loadEnv(): Env {
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    // In dev, fall back to safe defaults rather than crashing on missing secrets.
+    // Production must provide real secrets (checked in app startup).
+    // eslint-disable-next-line no-console
+    console.warn('Invalid env, using dev defaults:', parsed.error.flatten().fieldErrors);
+    return {
+      NODE_ENV: (process.env.NODE_ENV as Env['NODE_ENV']) ?? 'development',
+      PORT: Number(process.env.PORT ?? 4000),
+      MONGODB_URI: process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/nfc_band_management',
+      USE_MEMORY_DB: process.env.USE_MEMORY_DB === 'true',
+      SEED_DEMO: process.env.SEED_DEMO !== 'false',
+      JWT_SECRET: process.env.JWT_SECRET ?? 'dev-only-secret-change-me-32-chars!!',
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET ?? 'dev-only-refresh-change-me-32-chars!',
+      JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL ?? '15m',
+      JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL ?? '30d',
+      CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5173',
+      CORS_ORIGINS: process.env.CORS_ORIGINS ?? 'http://localhost:5173',
+      NFC_BRIDGE_URL: process.env.NFC_BRIDGE_URL ?? 'http://localhost:8787',
+      NFC_READER_MODE: (process.env.NFC_READER_MODE as Env['NFC_READER_MODE']) ?? 'keyboard',
+      NFC_DUP_WINDOW_MS: Number(process.env.NFC_DUP_WINDOW_MS ?? 3000),
+      BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS ?? 12),
+      LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
+    };
+  }
+  return parsed.data;
+}
+
+export const env = loadEnv();
+export const isProd = env.NODE_ENV === 'production';
+
