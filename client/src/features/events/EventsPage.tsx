@@ -37,7 +37,7 @@ export function EventsPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Events"
         subtitle="Capacity-guarded check-ins, manual or via NFC EVENT_CHECK_IN."

@@ -40,7 +40,7 @@ export function AttendancePage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Attendance"
         subtitle="NFC check-ins, manual entries, and corrections."

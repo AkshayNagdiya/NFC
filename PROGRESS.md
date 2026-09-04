@@ -1,4 +1,4 @@
-# Handoff — NFC Band Management System
+# Handoff — AirData (NFC Band Management System)
 
 Last updated: 2026-09-03 (end of day). Next session: resume at "Remaining work" below.
 

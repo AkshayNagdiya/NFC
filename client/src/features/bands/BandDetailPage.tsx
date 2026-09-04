@@ -49,12 +49,12 @@ export function BandDetailPage(): JSX.Element {
     }
   }
 
-  if (band.isPending) return <div className="space-y-3 p-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
+  if (band.isPending) return <div className="space-y-5"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>;
   if (band.isError || !band.data) return <div className="p-6"><ErrorState message={(band.error as Error)?.message ?? 'Band not found'} /></div>;
   const b = band.data;
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-5">
       <PageHeader title={`Band ${b.bandId}`} subtitle={b.nfcUid} actions={<Badge value={b.status} />} />
       {error && <p className="rounded-md border border-red-200 p-3 text-sm text-red-700" role="alert">{error}</p>}
 

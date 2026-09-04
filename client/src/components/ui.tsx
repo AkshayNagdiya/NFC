@@ -1,12 +1,37 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+/* ————— Button ————— */
+
+type BtnVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'gold';
+type BtnSize = 'sm' | 'md' | 'lg' | 'icon';
+
+const BTN_SIZES: Record<BtnSize, string> = {
+  sm: 'h-8 px-3 text-[13px]',
+  md: 'h-9 px-4 text-[13.5px]',
+  lg: 'h-11 px-6 text-sm',
+  icon: 'h-9 w-9',
+};
+
 export function Button({
-  children, onClick, type = 'button', variant = 'primary', disabled, className, ariaLabel,
+  children,
+  onClick,
+  type = 'button',
+  variant = 'secondary',
+  size = 'md',
+  disabled,
+  className,
+  ariaLabel,
 }: {
-  children: ReactNode; onClick?: () => void; type?: 'button' | 'submit';
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  disabled?: boolean; className?: string; ariaLabel?: string;
+  children: ReactNode;
+  onClick?: () => void;
+  type?: 'button' | 'submit';
+  variant?: BtnVariant;
+  size?: BtnSize;
+  disabled?: boolean;
+  className?: string;
+  ariaLabel?: string;
 }): JSX.Element {
   return (
     <button
@@ -15,11 +40,15 @@ export function Button({
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50',
-        variant === 'primary' && 'bg-primary text-primary-foreground hover:opacity-90',
-        variant === 'secondary' && 'border border-border bg-background hover:bg-muted',
-        variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
-        variant === 'ghost' && 'hover:bg-muted',
+        'inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] font-medium tracking-[-0.01em] transition-all duration-200 disabled:pointer-events-none disabled:opacity-40',
+        BTN_SIZES[size],
+        variant === 'primary' && 'bg-white text-black hover:bg-white/90 active:scale-[0.98] shadow-[0_8px_20px_-8px_rgba(255,255,255,0.4)]',
+        variant === 'gold' && 'gold-button font-semibold',
+        variant === 'secondary' &&
+          'border border-white/[0.09] bg-white/[0.04] text-[hsl(var(--foreground))] hover:border-white/[0.16] hover:bg-white/[0.07] active:scale-[0.98]',
+        variant === 'danger' &&
+          'border border-red-500/25 bg-red-500/[0.12] text-red-300 hover:bg-red-500/[0.2] active:scale-[0.98]',
+        variant === 'ghost' && 'text-white/70 hover:bg-white/[0.06] hover:text-white',
         className,
       )}
     >
@@ -28,12 +57,14 @@ export function Button({
   );
 }
 
+/* ————— Inputs ————— */
+
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>): JSX.Element {
   return (
     <input
       {...props}
       className={cn(
-        'w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary',
+        'premium-input h-10 w-full rounded-[10px] px-3.5 text-[13.5px] text-white outline-none',
         props.className,
       )}
     />
@@ -44,131 +75,312 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>): JS
   return (
     <select
       {...props}
-      className={cn('rounded-md border border-border bg-background px-2 py-2 text-sm', props.className)}
+      className={cn(
+        'premium-input h-10 rounded-[10px] px-3 pr-8 text-[13.5px] text-white outline-none',
+        props.className,
+      )}
     />
   );
 }
 
+export function Field({
+  label,
+  error,
+  children,
+  htmlFor,
+  hint,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+  htmlFor?: string;
+  hint?: string;
+}): JSX.Element {
+  return (
+    <div className="space-y-[7px]">
+      <label htmlFor={htmlFor} className="block text-[12.5px] font-semibold tracking-[-0.01em] text-white/85">
+        {label}
+      </label>
+      {children}
+      {hint && !error && <p className="text-xs leading-relaxed text-white/35">{hint}</p>}
+      {error && (
+        <p className="text-xs font-medium text-red-400" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ————— Badge ————— */
+
 const BADGE_TONES: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
-  SUCCESS: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
-  ALLOW: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
-  PRESENT: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300',
-  ASSIGNED: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-  AVAILABLE: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  BLOCKED: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-  DENIED: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-  LOST: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  DAMAGED: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
-  EXPIRED: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
-  DECOMMISSIONED: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
-  DISABLED: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
-  UNKNOWN: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  INVALID: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-  ERROR: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  ACTIVE: 'border-emerald-400/20 bg-emerald-400/[0.1] text-emerald-300',
+  SUCCESS: 'border-emerald-400/20 bg-emerald-400/[0.1] text-emerald-300',
+  ALLOW: 'border-emerald-400/20 bg-emerald-400/[0.1] text-emerald-300',
+  PRESENT: 'border-emerald-400/20 bg-emerald-400/[0.1] text-emerald-300',
+  ASSIGNED: 'border-sky-400/20 bg-sky-400/[0.1] text-sky-300',
+  AVAILABLE: 'border-white/10 bg-white/[0.05] text-white/60',
+  BLOCKED: 'border-red-400/20 bg-red-400/[0.1] text-red-300',
+  DENIED: 'border-red-400/20 bg-red-400/[0.1] text-red-300',
+  LOST: 'border-amber-400/20 bg-amber-400/[0.1] text-amber-300',
+  DAMAGED: 'border-orange-400/20 bg-orange-400/[0.1] text-orange-300',
+  EXPIRED: 'border-violet-400/20 bg-violet-400/[0.1] text-violet-300',
+  DECOMMISSIONED: 'border-white/10 bg-white/[0.04] text-white/40',
+  DISABLED: 'border-white/10 bg-white/[0.04] text-white/40',
+  UNKNOWN: 'border-white/10 bg-white/[0.05] text-white/55',
+  INVALID: 'border-red-400/20 bg-red-400/[0.1] text-red-300',
+  ERROR: 'border-red-400/20 bg-red-400/[0.1] text-red-300',
 };
 
-export function Badge({ value }: { value: string }): JSX.Element {
+const DOT_TONES: Record<string, string> = {
+  ACTIVE: 'bg-emerald-400',
+  SUCCESS: 'bg-emerald-400',
+  ALLOW: 'bg-emerald-400',
+  PRESENT: 'bg-emerald-400',
+  ASSIGNED: 'bg-sky-400',
+  DENIED: 'bg-red-400',
+  BLOCKED: 'bg-red-400',
+  LOST: 'bg-amber-400',
+};
+
+export function Badge({ value, dot = true }: { value: string; dot?: boolean }): JSX.Element {
   return (
-    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', BADGE_TONES[value] ?? BADGE_TONES.AVAILABLE)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] text-[11px] font-semibold uppercase tracking-[0.06em]',
+        BADGE_TONES[value] ?? BADGE_TONES.AVAILABLE,
+      )}
+    >
+      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', DOT_TONES[value] ?? 'bg-current opacity-60')} aria-hidden />}
       {value}
     </span>
   );
 }
 
-export function Card({ children, className }: { children: ReactNode; className?: string }): JSX.Element {
-  return <div className={cn('rounded-xl border border-border bg-background p-4', className)}>{children}</div>;
-}
+/* ————— Card ————— */
 
-export function Skeleton({ className }: { className?: string }): JSX.Element {
-  return <div aria-hidden className={cn('animate-pulse rounded-md bg-muted', className)} />;
-}
-
-export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }): JSX.Element {
+export function Card({
+  children,
+  className,
+  hover,
+}: {
+  children: ReactNode;
+  className?: string;
+  hover?: boolean;
+}): JSX.Element {
   return (
-    <div className="space-y-2" aria-label="Loading table">
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="flex gap-2">
-          {Array.from({ length: cols }).map((_, c) => (
-            <Skeleton key={c} className="h-8 flex-1" />
-          ))}
-        </div>
-      ))}
+    <div className={cn('premium-card rounded-2xl p-5', hover && 'premium-card-hover', className)}>{children}</div>
+  );
+}
+
+export function CardHeader({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+}): JSX.Element {
+  return (
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h3 className="text-[14.5px] font-semibold tracking-[-0.01em] text-white">{title}</h3>
+        {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-white/40">{subtitle}</p>}
+      </div>
+      {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
     </div>
   );
 }
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }): JSX.Element {
+export function Skeleton({ className }: { className?: string }): JSX.Element {
+  return <div aria-hidden className={cn('shimmer rounded-lg', className)} />;
+}
+
+export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }): JSX.Element {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-12 text-center">
-      <p className="font-medium">{title}</p>
-      <p className="max-w-sm text-sm text-muted-foreground">{body}</p>
-      {action}
+    <div className="overflow-hidden rounded-2xl border border-white/[0.07]" aria-label="Loading table">
+      <div className="flex gap-2 border-b border-white/[0.07] bg-white/[0.02] px-4 py-3">
+        {Array.from({ length: cols }).map((_, c) => (
+          <Skeleton key={c} className="h-3 flex-1" />
+        ))}
+      </div>
+      <div className="space-y-0">
+        {Array.from({ length: rows }).map((_, r) => (
+          <div key={r} className="flex gap-2 border-b border-white/[0.04] px-4 py-3.5 last:border-0">
+            {Array.from({ length: cols }).map((_, c) => (
+              <Skeleton key={c} className="h-4 flex-1" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ————— Premium table wrapper ————— */
+
+export function TableWrap({ children }: { children: ReactNode }): JSX.Element {
+  return (
+    <div className="premium-card overflow-x-auto rounded-2xl">
+      <table className="premium-table">{children}</table>
+    </div>
+  );
+}
+
+/* ————— Empty / Error ————— */
+
+export function EmptyState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: ReactNode;
+}): JSX.Element {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.015] px-6 py-14 text-center">
+      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.04] text-white/50">
+        <Inbox size={20} aria-hidden />
+      </span>
+      <p className="mt-1 text-[14px] font-semibold text-white">{title}</p>
+      <p className="max-w-sm text-[13px] leading-relaxed text-white/40">{body}</p>
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }): JSX.Element {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-red-200 py-10 text-center" role="alert">
-      <p className="font-medium">Something went wrong</p>
-      <p className="max-w-md text-sm text-muted-foreground">{message}</p>
-      {onRetry && <Button variant="secondary" onClick={onRetry}>Retry</Button>}
+    <div
+      className="flex flex-col items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/[0.05] px-6 py-12 text-center"
+      role="alert"
+    >
+      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-400">
+        <AlertTriangle size={20} aria-hidden />
+      </span>
+      <p className="mt-1 text-[14px] font-semibold text-white">Something went wrong</p>
+      <p className="max-w-md text-[13px] leading-relaxed text-white/50">{message}</p>
+      {onRetry && (
+        <Button variant="secondary" size="sm" onClick={onRetry} className="mt-2">
+          Try again
+        </Button>
+      )}
     </div>
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }): JSX.Element {
+export function SuccessNote({ message }: { message: string }): JSX.Element {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-      </div>
-      {actions && <div className="flex gap-2">{actions}</div>}
-    </div>
+    <p className="flex items-center gap-2 rounded-[10px] border border-emerald-400/20 bg-emerald-400/[0.08] px-3 py-2.5 text-[13px] font-medium text-emerald-300">
+      <CheckCircle2 size={15} aria-hidden /> {message}
+    </p>
   );
 }
 
-export function Pagination({ page, totalPages, onPage }: { page: number; totalPages: number; onPage: (p: number) => void }): JSX.Element {
-  if (totalPages <= 1) return <></>;
-  return (
-    <div className="flex items-center justify-end gap-2 text-sm">
-      <Button variant="secondary" disabled={page <= 1} onClick={() => onPage(page - 1)}>Previous</Button>
-      <span aria-live="polite" className="text-muted-foreground">Page {page} of {totalPages}</span>
-      <Button variant="secondary" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>Next</Button>
-    </div>
-  );
-}
+/* ————— Page header ————— */
 
-export function ConfirmDialog({
-  title, body, confirmLabel = 'Confirm', danger, onConfirm, onCancel, pending,
+export function PageHeader({
+  title,
+  subtitle,
+  eyebrow,
+  actions,
 }: {
-  title: string; body: string; confirmLabel?: string; danger?: boolean;
-  onConfirm: () => void; onCancel: () => void; pending?: boolean;
+  title: string;
+  subtitle?: string;
+  eyebrow?: string;
+  actions?: ReactNode;
 }): JSX.Element {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="alertdialog" aria-modal="true" aria-label={title}>
-      <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-background p-6">
-        <h2 className="font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{body}</p>
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-          <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} disabled={pending}>
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0">
+        {eyebrow && <p className="eyebrow mb-2 text-[#D4A853]">{eyebrow}</p>}
+        <h1 className="text-balance text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-white">
+          {title}
+        </h1>
+        {subtitle && <p className="mt-1.5 max-w-xl text-[13.5px] leading-relaxed text-white/45">{subtitle}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+/* ————— Pagination ————— */
+
+export function Pagination({
+  page,
+  totalPages,
+  onPage,
+}: {
+  page: number;
+  totalPages: number;
+  onPage: (p: number) => void;
+}): JSX.Element {
+  if (totalPages <= 1) return <></>;
+  return (
+    <div className="flex items-center justify-between gap-3 pt-1">
+      <p aria-live="polite" className="text-xs tabular-nums text-white/40">
+        Page <span className="font-semibold text-white/80">{page}</span> of{' '}
+        <span className="font-semibold text-white/80">{totalPages}</span>
+      </p>
+      <div className="flex items-center gap-1.5">
+        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)} ariaLabel="Previous page">
+          <ChevronLeft size={15} /> Prev
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={page >= totalPages}
+          onClick={() => onPage(page + 1)}
+          ariaLabel="Next page"
+        >
+          Next <ChevronRight size={15} />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ————— Dialog ————— */
+
+export function ConfirmDialog({
+  title,
+  body,
+  confirmLabel = 'Confirm',
+  danger,
+  onConfirm,
+  onCancel,
+  pending,
+}: {
+  title: string;
+  body: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  pending?: boolean;
+}): JSX.Element {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="premium-card w-full max-w-[400px] animate-fade-up space-y-4 rounded-3xl p-6">
+        <h2 className="text-[16px] font-semibold tracking-tight text-white">{title}</h2>
+        <p className="text-[13.5px] leading-relaxed text-white/50">{body}</p>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant={danger ? 'danger' : 'gold'} onClick={onConfirm} disabled={pending}>
             {pending ? 'Working…' : confirmLabel}
           </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-export function Field({ label, error, children, htmlFor }: { label: string; error?: string; children: ReactNode; htmlFor?: string }): JSX.Element {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium">{label}</label>
-      {children}
-      {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
     </div>
   );
 }
@@ -183,7 +395,9 @@ export function useConfirm(): {
 
   function ask(o: { title: string; body: string; confirmLabel?: string; danger?: boolean }): Promise<boolean> {
     setOpts(o);
-    return new Promise<boolean>((resolve) => { resolver.current = resolve; });
+    return new Promise<boolean>((resolve) => {
+      resolver.current = resolve;
+    });
   }
 
   const dialog = opts ? (
@@ -193,10 +407,39 @@ export function useConfirm(): {
       confirmLabel={opts.confirmLabel}
       danger={opts.danger}
       pending={pending}
-      onCancel={() => { setOpts(null); resolver.current(false); }}
-      onConfirm={() => { setPending(true); setOpts(null); setPending(false); resolver.current(true); }}
+      onCancel={() => {
+        setOpts(null);
+        resolver.current(false);
+      }}
+      onConfirm={() => {
+        setPending(true);
+        setOpts(null);
+        setPending(false);
+        resolver.current(true);
+      }}
     />
   ) : null;
 
   return { ask, dialog };
+}
+
+/* ————— Misc ————— */
+
+export function Divider({ className }: { className?: string }): JSX.Element {
+  return <div className={cn('h-px bg-white/[0.07]', className)} aria-hidden />;
+}
+
+export function Stat({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}): JSX.Element {
+  return (
+    <div className="min-w-0">
+      <p className="eyebrow text-white/35">{label}</p>
+      <p className="mt-1 truncate text-[14px] font-semibold tabular-nums text-white">{value}</p>
+    </div>
+  );
 }

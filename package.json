@@ -1,8 +1,8 @@
 {
-  "name": "nfc-band-management",
+  "name": "airdata",
   "version": "0.1.0",
   "private": true,
-  "description": "Production-grade NFC Band Management System (web only)",
+  "description": "AirData — Production-grade NFC Band Management System (web only)",
   "type": "module",
   "packageManager": "npm@10.8.2",
   "workspaces": [

@@ -32,7 +32,7 @@ export function AuditPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader title="Audit Logs" subtitle="Append-only record of every sensitive action. No edit or delete API exists." />
       <div className="flex flex-wrap gap-2">
         <div className="min-w-52"><Input placeholder="Filter by action, e.g. BAND_BLOCKED" value={action} onChange={(e) => { setAction(e.target.value.toUpperCase()); setPage(1); }} aria-label="Filter by action" className="font-mono" /></div>

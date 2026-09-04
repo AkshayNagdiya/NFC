@@ -20,7 +20,7 @@ export function BandsPage(): JSX.Element {
   const query = useBands({ page, search: debounced, status: status || undefined, type: type || undefined });
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="NFC Bands"
         subtitle="Register, assign, and manage every band in your organization."

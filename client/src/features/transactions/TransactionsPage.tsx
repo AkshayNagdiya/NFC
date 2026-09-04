@@ -22,7 +22,7 @@ export function TransactionsPage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader title="Transactions" subtitle="Immutable financial ledger. Reversals are new REFUND rows." />
       <div className="flex flex-wrap gap-2">
         <Select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} aria-label="Filter by type">

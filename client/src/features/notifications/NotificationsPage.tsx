@@ -55,7 +55,7 @@ export function NotificationsPage(): JSX.Element {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader
         title="Notifications"
         subtitle={query.data ? `${query.data.unread} unread` : undefined}

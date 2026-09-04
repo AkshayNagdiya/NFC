@@ -18,7 +18,7 @@ export function AccessPage(): JSX.Element {
   const update = useUpdateRule();
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Access Control"
         subtitle="Rules decide every ENTRY scan. DENY rules always win; no match means deny."

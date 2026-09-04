@@ -34,7 +34,7 @@ export function DevicesPage(): JSX.Element {
   });
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Devices"
         subtitle="NFC readers and kiosks. Health derives from heartbeats — stale devices read OFFLINE."

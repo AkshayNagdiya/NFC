@@ -46,7 +46,7 @@ export function ReportsPage(): JSX.Element {
   }
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-5">
       <PageHeader title="Reports" subtitle="Aggregates plus spreadsheet-ready CSV exports (up to 5,000 rows)." />
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-sm">From <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1.5" aria-label="From date" /></label>

@@ -1,4 +1,4 @@
-# NFC Band Management System
+# AirData — NFC Band Management System
 
 Production-grade, web-only NFC band platform: admin web UI, operator/kiosk web UI, backend API, and an isolated local NFC bridge.
 

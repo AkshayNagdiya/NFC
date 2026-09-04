@@ -8,6 +8,10 @@ build/
 .env.local
 .env.*.local
 
+# Runtime DB-mode choice (may contain a pasted Atlas URI) — never commit
+.db-mode.json
+server/.db-mode.json
+
 # Logs
 *.log
 logs/

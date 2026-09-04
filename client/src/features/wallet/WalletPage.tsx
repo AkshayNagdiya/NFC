@@ -40,7 +40,7 @@ export function WalletPage(): JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-6">
+    <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader title="Wallet" subtitle="Balances, top-ups, debits, and adjustments." />
       <Card className="space-y-3">
         <Field label="Find wallet holder" htmlFor="w-user">

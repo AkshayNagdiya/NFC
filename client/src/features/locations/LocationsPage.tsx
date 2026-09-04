@@ -18,7 +18,7 @@ export function LocationsPage(): JSX.Element {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['location-tree'] });
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Locations"
         subtitle="Organization → location → zone → gate hierarchy."

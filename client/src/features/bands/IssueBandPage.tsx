@@ -59,7 +59,7 @@ export function IssueBandPage(): JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 p-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <PageHeader title="Issue Band" subtitle={`Step ${Math.min(step, 3)} of 3: ${step === 1 ? 'Select user' : step === 2 ? 'Scan NFC' : step === 3 ? 'Review' : 'Done'}`} />
 
       {step === 1 && (

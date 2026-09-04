@@ -10,6 +10,7 @@ import { locationRoutes } from '../modules/locations/location.routes.js';
 import { nfcRoutes } from '../modules/nfc/nfc.routes.js';
 import { notificationRoutes } from '../modules/notifications/notification.routes.js';
 import { settingsRoutes } from '../modules/organizations/organization.routes.js';
+import { databaseRoutes } from '../modules/system/database.routes.js';
 import { reportRoutes } from '../modules/reports/report.routes.js';
 import { transactionRoutes, walletRoutes } from '../modules/wallets/wallet.routes.js';
 import { userRoutes } from '../modules/users/user.routes.js';
@@ -30,6 +31,7 @@ apiRoutes.use('/events', eventRoutes);
 apiRoutes.use('/notifications', notificationRoutes);
 apiRoutes.use('/audit-logs', auditRoutes);
 apiRoutes.use('/settings', settingsRoutes);
+apiRoutes.use('/system/database', databaseRoutes);
 apiRoutes.use('/reports', reportRoutes);
 
 apiRoutes.get('/health', (req, res) => {

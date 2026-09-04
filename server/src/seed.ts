@@ -10,25 +10,25 @@ import { Gate, Location, Zone } from './modules/locations/location.models.js';
 
 export async function seedDatabase(silent = false): Promise<void> {
   const org = await Organization.findOneAndUpdate(
-    { slug: 'sunrise-academy' },
+    { slug: 'Eskills' },
     {
       $setOnInsert: {
-        name: 'Sunrise Academy',
-        slug: 'sunrise-academy',
+        name: 'Eskills',
+        slug: 'Eskills',
         status: 'ACTIVE',
-        contactEmail: 'ops@sunrise-academy.example',
+        contactEmail: 'ops@Eskills.com',
       },
     },
     { upsert: true, new: true },
   );
   const orgId = org._id as mongoose.Types.ObjectId;
-  const passwordHash = await hashPassword('ChangeMe123!');
+  const passwordHash = await hashPassword('Test@123');
   const staff: Array<{ email: string; firstName: string; lastName: string; role: string }> = [
-    { email: 'admin@sunrise-academy.example', firstName: 'Meera', lastName: 'Krishnan', role: 'ADMIN' },
-    { email: 'manager@sunrise-academy.example', firstName: 'Rohan', lastName: 'Verma', role: 'MANAGER' },
-    { email: 'operator@sunrise-academy.example', firstName: 'Kavya', lastName: 'Nair', role: 'OPERATOR' },
-    { email: 'security@sunrise-academy.example', firstName: 'Arjun', lastName: 'Menon', role: 'SECURITY' },
-    { email: 'finance@sunrise-academy.example', firstName: 'Divya', lastName: 'Iyer', role: 'FINANCE' },
+    { email: 'admin@Eskills.com', firstName: 'Akshay', lastName: 'Nagdiya', role: 'ADMIN' },
+    { email: 'manager@Eskills.com', firstName: 'Rohan', lastName: 'Verma', role: 'MANAGER' },
+    { email: 'operator@Eskills.com', firstName: 'Kavya', lastName: 'Nair', role: 'OPERATOR' },
+    { email: 'security@Eskills.com', firstName: 'Arjun', lastName: 'Menon', role: 'SECURITY' },
+    { email: 'finance@Eskills.com', firstName: 'Divya', lastName: 'Iyer', role: 'FINANCE' },
   ];
   const users: Record<string, mongoose.Types.ObjectId> = {};
   for (const s of staff) {
@@ -41,9 +41,9 @@ export async function seedDatabase(silent = false): Promise<void> {
   }
   // A few students who hold bands.
   const students = [
-    { email: 'akshay.sharma@sunrise-academy.example', firstName: 'Akshay', lastName: 'Sharma' },
-    { email: 'priya.patel@sunrise-academy.example', firstName: 'Priya', lastName: 'Patel' },
-    { email: 'vikram.reddy@sunrise-academy.example', firstName: 'Vikram', lastName: 'Reddy' },
+    { email: 'akshay@Eskills.com', firstName: 'Akshay', lastName: 'Sharma' },
+    { email: 'shivam@Eskills.com', firstName: 'Shivam', lastName: 'Goswami' },
+    { email: 'azim@Eskills.com', firstName: 'Azim', lastName: 'Khan' },
   ];
   const studentIds: mongoose.Types.ObjectId[] = [];
   for (const s of students) {

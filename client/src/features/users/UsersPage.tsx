@@ -75,7 +75,7 @@ export function UsersPage(): JSX.Element {
   const update = useUpdateUser();
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-5">
       <PageHeader
         title="Users"
         subtitle="People across your organization."

@@ -110,12 +110,12 @@ export function ScannerPage(): JSX.Element {
   const readerOk = status === 'connected' && (mode === 'keyboard' || bridge.ok);
 
   return (
-    <div className={cn('mx-auto max-w-3xl space-y-5 p-6', kiosk && 'max-w-5xl bg-black text-white min-h-screen')}>
+    <div className={cn('mx-auto max-w-3xl space-y-6', kiosk && 'max-w-5xl bg-black text-white min-h-screen')}>
       {/* Status strip */}
-      <div className={cn('flex flex-wrap items-center gap-2 text-xs', kiosk ? 'text-gray-300' : 'text-muted-foreground')}>
-        <span className="flex items-center gap-1.5" role="status" aria-label={`Reader ${status}`}>
-          <span className={status === 'connected' ? 'text-green-500' : 'text-red-500'} aria-hidden>●</span>
-          Reader: {status} ({mode})
+      <div className={cn('flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-2.5 text-xs', kiosk ? 'text-gray-300' : 'text-white/50')}>
+        <span className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-medium" role="status" aria-label={`Reader ${status}`}>
+          <span className={cn('h-1.5 w-1.5 rounded-full', status === 'connected' ? 'animate-pulse-dot bg-emerald-400' : 'bg-red-400')} aria-hidden />
+          Reader: {status} · {mode}
         </span>
         {mode === 'bridge' && (
           <span title={bridge.error ?? `Bridge mode: ${bridge.mode}, ${bridge.clients ?? 0} clients`}>
@@ -159,7 +159,11 @@ export function ScannerPage(): JSX.Element {
         </div>
       )}
 
-      <h1 className={cn('text-center font-semibold tracking-tight', kiosk ? 'text-5xl' : 'text-3xl')}>NFC Scanner</h1>
+      <div className="text-center">
+        <p className="eyebrow mb-2 justify-center text-[#D4A853]">Live terminal</p>
+        <h1 className={cn('font-semibold tracking-[-0.025em] text-white', kiosk ? 'text-5xl' : 'text-[30px]')}>NFC Scanner</h1>
+        <p className="mt-1.5 text-[13.5px] text-white/45">Tap a band — result in milliseconds.</p>
+      </div>
 
       {/* Action selector (compact in kiosk) */}
       <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Scan action">
@@ -169,11 +173,11 @@ export function ScannerPage(): JSX.Element {
             onClick={() => setAction(a)}
             aria-pressed={action === a}
             className={cn(
-              'rounded-lg border font-medium',
-              kiosk ? 'px-6 py-4 text-xl' : 'px-3 py-2 text-sm',
+              'h-9 rounded-[10px] border px-3.5 text-[13px] font-semibold transition-all',
+              kiosk && 'h-auto px-6 py-4 text-xl rounded-2xl',
               action === a
-                ? 'border-primary bg-primary text-primary-foreground'
-                : kiosk ? 'border-gray-600 text-white hover:bg-gray-800' : 'border-border hover:bg-muted',
+                ? 'gold-button border-transparent'
+                : kiosk ? 'border-gray-600 text-white hover:bg-gray-800' : 'border-white/[0.09] bg-white/[0.03] text-white/60 hover:border-white/[0.16] hover:text-white',
             )}
           >
             {a.replace('_', ' ')}
@@ -197,11 +201,12 @@ export function ScannerPage(): JSX.Element {
 
       {/* Main panel */}
       {state.kind === 'idle' && (
-        <div className={cn('rounded-2xl border p-10 text-center', kiosk ? 'border-gray-700 bg-gray-900' : 'border-border')}>
+        <div className={cn('premium-card rounded-3xl p-10 text-center', kiosk && 'border-gray-700 bg-gray-900')}>
           {readerOk ? (
             <>
-              <p className={cn('font-medium', kiosk ? 'text-3xl' : 'text-xl')}>Ready to scan</p>
-              <p className={cn('mt-2', kiosk ? 'text-xl text-gray-300' : 'text-muted-foreground')}>
+              <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-b from-[#F0D48A] to-[#8F6A2E] shadow-glow text-black font-mono text-xl">◉</span>
+              <p className={cn('font-semibold text-white', kiosk ? 'text-3xl' : 'text-[19px]')}>Ready to scan</p>
+              <p className={cn('mt-2', kiosk ? 'text-xl text-gray-300' : 'text-[13.5px] text-white/45')}>
                 Place the NFC band near the reader.
               </p>
             </>
