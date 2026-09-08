@@ -20,6 +20,7 @@ export interface BandItem {
   expiresAt?: string;
   blockedReason?: string;
   replacementFor?: string;
+  tapToken?: string;
   createdAt: string;
 }
 
@@ -52,7 +53,7 @@ export function useBand(id: string | undefined) {
   });
 }
 
-export function useBandAction(action: 'assign' | 'activate' | 'block' | 'unblock' | 'mark-lost' | 'mark-damaged' | 'replace' | 'deactivate') {
+export function useBandAction(action: 'assign' | 'activate' | 'block' | 'unblock' | 'mark-lost' | 'mark-damaged' | 'replace' | 'deactivate' | 'tap-link') {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body?: Record<string, unknown> }) =>

@@ -313,6 +313,43 @@ export const nfcScanService = {
       .skip((q.page - 1) * q.pageSize).limit(q.pageSize).lean();
     return { items, page: q.page, pageSize: q.pageSize, total, totalPages: Math.ceil(total / q.pageSize) };
   },
+
+  /**
+   * Phone-tap check-in via per-band secret link (no login — the token is the credential).
+   * Tap card URL -> browser opens /t/:token -> this records a CHECK_IN through the
+   * same pipeline (dedupe + attendance + audit). Only ACTIVE bands with a holder qualify.
+   */
+  async tapCheckIn(token: string, ctx: Ctx) {
+    const band = await NFCBand.findOne({ tapToken: token }).lean();
+    if (!band) throw new ApiError(404, 'NOT_FOUND', 'This tap link is invalid. Ask your administrator for a new one.');
+    if (band.status !== 'ACTIVE') {
+      throw new ApiError(409, 'INVALID_STATE', `Cannot check in: band ${band.bandId} is ${String(band.status).toLowerCase()}.`);
+    }
+    if (!band.userId) throw new ApiError(409, 'INVALID_STATE', 'Cannot check in: band has no holder yet.');
+    const holder = await User.findById(band.userId).select('firstName lastName status').lean();
+    if (!holder) throw new ApiError(409, 'INVALID_STATE', 'Cannot check in: holder account no longer exists.');
+
+    const tapAuth: AuthContext = {
+      userId: String(band.userId),
+      organizationId: String(band.organizationId),
+      role: 'TAP_LINK',
+      permissions: [],
+    };
+    const out = await nfcScanService.process(
+      tapAuth,
+      { nfcUid: band.nfcUid, action: 'CHECK_IN' },
+      ctx,
+      'keyboard',
+    );
+    return {
+      result: out.result,
+      message: out.message,
+      bandId: band.bandId,
+      name: `${(holder as { firstName: string }).firstName} ${(holder as { lastName: string }).lastName}`,
+      at: new Date().toISOString(),
+      statusCode: out.statusCode,
+    };
+  },
 };
 
 function toResult(scan: Record<string, unknown> | object) {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
+import { newId } from './utils';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
@@ -9,7 +10,7 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  config.headers['X-Request-Id'] = `req_${crypto.randomUUID()}`;
+  config.headers['X-Request-Id'] = `req_${newId()}`;
   return config;
 });
 

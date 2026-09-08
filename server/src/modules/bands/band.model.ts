@@ -34,6 +34,8 @@ const nfcBandSchema = new Schema(
     replacementFor: { type: Schema.Types.ObjectId, ref: 'NFCBand' },
     replacementReason: { type: String, maxlength: 500 },
     assignedLocationId: { type: Schema.Types.ObjectId, ref: 'Location' },
+    /** Secret phone-tap link token (tap card URL -> check-in without login). Rotatable. */
+    tapToken: { type: String, unique: true, sparse: true, index: true },
     metadata: { type: Schema.Types.Mixed },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },

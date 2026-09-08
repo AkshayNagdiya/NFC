@@ -6,6 +6,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { inr, parseRupees } from '../../lib/format';
 import { Badge, Button, Card, Field, Input, PageHeader, useConfirm } from '../../components/ui';
 import { useTransactions, useWallet, useWalletOp } from './walletApi';
+import { newId } from '../../lib/utils';
 
 interface UserRow { _id: string; firstName: string; lastName: string; email: string; }
 
@@ -139,7 +140,7 @@ function MoneyDialog({ op, userId, onClose }: { op: 'credit' | 'debit' | 'adjust
             disabled={!valid || mutation.isPending}
             onClick={() => {
               const body: Record<string, unknown> = {
-                idempotencyKey: `${op}_${crypto.randomUUID()}`,
+                idempotencyKey: `${op}_${newId()}`,
                 ...(reason.trim() ? { reason: reason.trim() } : {}),
               };
               if (op === 'adjust') body.deltaMinor = Math.round(Number(amount) * 100);

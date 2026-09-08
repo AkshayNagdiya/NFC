@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
 import { RequireAuth } from './guards';
 import { LoginPage } from '../features/auth/LoginPage';
+import { TapPage } from '../features/tap/TapPage';
 import { Skeleton } from '../components/ui';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -35,6 +36,7 @@ const l = (el: React.ReactNode) => <Lazy>{el}</Lazy>;
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/t/:token', element: <TapPage /> },
   {
     element: <RequireAuth />,
     children: [

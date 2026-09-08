@@ -17,6 +17,19 @@ export const nfcController = {
     }
   },
 
+  async tap(req: Request, res: Response, next: NextFunction) {
+    try {
+      const out = await nfcScanService.tapCheckIn(req.body.token, {
+        ip: req.ip,
+        ua: req.headers['user-agent'],
+        requestId: req.requestId,
+      });
+      res.status(out.statusCode).json({ success: true, data: out, requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+
   async list(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await nfcScanService.list(req.auth!, {

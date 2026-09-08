@@ -79,7 +79,7 @@ export function ScannerPage(): JSX.Element {
   }
 
   const busy = state.kind === 'reading';
-  const { mode, setMode, status, bridge, retry } = useReader({
+  const { mode, setMode, status, bridge, retry, beginPhoneScan, phoneActive, phoneError } = useReader({
     paused: busy || scan.isPending,
     onTag: (tag) => {
       setState({ kind: 'reading', uid: tag.uid });
@@ -107,7 +107,9 @@ export function ScannerPage(): JSX.Element {
     if (countdown.current) window.clearInterval(countdown.current);
   }, []);
 
-  const readerOk = status === 'connected' && (mode === 'keyboard' || bridge.ok);
+  const readerOk = status === 'connected' && (
+    mode === 'keyboard' || (mode === 'phone' && phoneActive) || (mode === 'bridge' && bridge.ok)
+  );
 
   return (
     <div className={cn('mx-auto max-w-3xl space-y-6', kiosk && 'max-w-5xl bg-black text-white min-h-screen')}>
@@ -146,6 +148,7 @@ export function ScannerPage(): JSX.Element {
             Reader
             <select value={mode} onChange={(e) => setMode(e.target.value as ReaderMode)} className="rounded-md border border-border bg-background px-2 py-1.5" aria-label="Reader adapter">
               <option value="keyboard">Keyboard (direct)</option>
+              <option value="phone">Phone NFC (tap to phone)</option>
               <option value="bridge">Local bridge (PC/SC · serial · vendor)</option>
             </select>
           </label>
@@ -159,6 +162,13 @@ export function ScannerPage(): JSX.Element {
         </div>
       )}
 
+      {mode === 'phone' && !phoneActive && (
+        <div className="rounded-xl border border-border p-4 text-center text-sm">
+          <p className="font-medium">Phone-as-reader uses Web NFC (Android Chrome/Edge + HTTPS only — iPhone Safari cannot tap-scan).</p>
+          <button onClick={beginPhoneScan} className="mt-3 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground">Enable phone NFC</button>
+          {phoneError && <p className="mt-2 text-xs text-red-600" role="alert">{phoneError}</p>}
+        </div>
+      )}
       <div className="text-center">
         <p className="eyebrow mb-2 justify-center text-[#D4A853]">Live terminal</p>
         <h1 className={cn('font-semibold tracking-[-0.025em] text-white', kiosk ? 'text-5xl' : 'text-[30px]')}>NFC Scanner</h1>

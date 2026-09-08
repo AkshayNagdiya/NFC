@@ -31,7 +31,9 @@ export function BandDetailPage(): JSX.Element {
   const lost = useBandAction('mark-lost');
   const damaged = useBandAction('mark-damaged');
   const deactivate = useBandAction('deactivate');
-  const pending = act.isPending || unblock.isPending || activate.isPending || lost.isPending || damaged.isPending || deactivate.isPending;
+  const tapLink = useBandAction('tap-link');
+  const [copied, setCopied] = useState(false);
+  const pending = act.isPending || unblock.isPending || activate.isPending || lost.isPending || damaged.isPending || deactivate.isPending || tapLink.isPending;
 
   const scans = useQuery({
     queryKey: ['band-scans', band.data?.nfcUid],
@@ -102,6 +104,41 @@ export function BandDetailPage(): JSX.Element {
           )}
         </Card>
       </div>
+
+      <Card>
+        <h2 className="mb-2 font-semibold">Phone tap link</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Write this URL to the card (NFC Tools → Write → URL). Tapping the card opens it and marks check-in — no login needed.
+        </p>
+        {b.tapToken ? (
+          <div className="space-y-2">
+            <p className="break-all rounded-md bg-muted p-2 font-mono text-xs">{`${window.location.origin}/t/${b.tapToken}`}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                disabled={pending}
+                onClick={() => {
+                  void navigator.clipboard?.writeText(`${window.location.origin}/t/${b.tapToken ?? ''}`);
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? 'Copied!' : 'Copy link'}
+              </Button>
+              {hasPerm('bands.update') && (
+                <Button variant="secondary" disabled={pending} onClick={() => run(() => tapLink.mutateAsync({ id: b._id }), { title: 'Rotate tap link?', body: 'The old URL on the card stops working. You must write the new URL to the card.' })}>Rotate link</Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">No tap link yet.</p>
+            {hasPerm('bands.update') && (
+              <Button disabled={pending} onClick={() => run(() => tapLink.mutateAsync({ id: b._id }), { title: 'Create tap link?', body: `Anyone with this link can check in ${b.bandId}. Write it to the card after creating.` })}>Create tap link</Button>
+            )}
+          </div>
+        )}
+      </Card>
 
       <Card>
         <h2 className="mb-2 font-semibold">Recent activity</h2>

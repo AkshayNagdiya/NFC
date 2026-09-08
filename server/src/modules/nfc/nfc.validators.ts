@@ -32,3 +32,10 @@ export const listScansSchema = z.object({
 });
 
 export type ScanInput = z.infer<typeof scanSchema>['body'];
+
+export const tapSchema = z.object({
+  body: z.object({
+    /** Per-band secret from the phone-tap link. This token IS the credential. */
+    token: z.string().regex(/^[0-9a-f]{64}$/, 'Invalid tap link'),
+  }),
+});

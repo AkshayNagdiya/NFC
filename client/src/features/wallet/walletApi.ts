@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { newId } from '../../lib/utils';
 
 export interface WalletInfo {
   _id: string;
@@ -57,7 +58,7 @@ export function useRefund() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: { transactionId: string; reason: string }) =>
-      (await api.post('/wallets/refund', { ...body, idempotencyKey: `refund_${crypto.randomUUID()}` })).data.data,
+      (await api.post('/wallets/refund', { ...body, idempotencyKey: `refund_${newId()}` })).data.data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }

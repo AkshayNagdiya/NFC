@@ -115,5 +115,63 @@ export class BridgeNfcAdapter implements NfcReader {
 
 export function createReader(mode: string): NfcReader {
   if (mode === 'bridge') return new BridgeNfcAdapter();
+  if (mode === 'phone') return new WebNfcAdapter();
   return new KeyboardNfcAdapter();
+}
+
+/**
+ * Phone-as-reader via Web NFC (Android Chrome/Edge only, HTTPS required).
+ * Tap card to the phone -> serialNumber (UID) -> same onTag flow -> POST /api/nfc/scan.
+ * iOS Safari and desktop browsers do not support Web NFC.
+ */
+export class WebNfcAdapter implements NfcReader {
+  readonly name = 'phone';
+  private listeners = new Set<(t: NfcTag) => void>();
+  private status: 'connected' | 'disconnected' | 'error' = 'disconnected';
+  private started = false;
+
+  static supportError(): string | null {
+    if (!window.isSecureContext) return 'Phone NFC needs HTTPS — open the https:// address, not http://.';
+    const w = window as unknown as Record<string, unknown>;
+    if (typeof w.NDEFReader === 'undefined') return 'Web NFC not supported here — use Android Chrome/Edge. iPhone Safari cannot tap-scan.';
+    return null;
+  }
+
+  async connect(): Promise<void> {
+    const err = WebNfcAdapter.supportError();
+    if (err) throw new Error(err);
+    this.status = 'connected';
+  }
+
+  /** Must be called from a user gesture (button tap). Starts the NFC radio. */
+  async beginScan(): Promise<void> {
+    if (this.started) return;
+    const err = WebNfcAdapter.supportError();
+    if (err) throw new Error(err);
+    const W = window as unknown as { NDEFReader: new () => { scan: (o?: object) => Promise<void>; onreading: ((e: unknown) => void) | null; onreadingerror: (() => void) | null } };
+    const reader = new W.NDEFReader();
+    reader.onreading = (ev: unknown) => {
+      const serial = (ev as { serialNumber?: unknown }).serialNumber;
+      const uid = String(serial ?? '').trim().toUpperCase();
+      if (/^[0-9A-F:*-]{4,64}$/.test(uid)) {
+        this.listeners.forEach((cb) => cb({ uid, at: Date.now() }));
+      }
+    };
+    reader.onreadingerror = () => { /* card unreadable — keep listening */ };
+    await reader.scan();
+    this.started = true;
+    this.status = 'connected';
+  }
+
+  async disconnect(): Promise<void> {
+    this.started = false;
+    this.status = 'disconnected';
+  }
+  getStatus(): 'connected' | 'disconnected' | 'error' {
+    return this.status;
+  }
+  onTag(cb: (tag: NfcTag) => void): () => void {
+    this.listeners.add(cb);
+    return () => this.listeners.delete(cb);
+  }
 }

@@ -26,3 +26,4 @@ bandRoutes.post('/:id/mark-lost', requirePerm('bands.update'), validate(bandIdPa
 bandRoutes.post('/:id/mark-damaged', requirePerm('bands.update'), validate(bandIdParamSchema), bandController.markDamaged);
 bandRoutes.post('/:id/replace', requirePerm('bands.replace'), validate(replaceBandSchema), bandController.replace);
 bandRoutes.post('/:id/deactivate', requirePerm('bands.update'), validate(bandIdParamSchema), bandController.deactivate);
+bandRoutes.post('/:id/tap-link', requirePerm('bands.update'), validate(bandIdParamSchema), bandController.rotateTapLink);

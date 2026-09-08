@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import crypto from 'node:crypto';
 import { ApiError } from '../../utils/errors.js';
 import { orgFilter } from '../../utils/orgScope.js';
 import type { AuthContext } from '../../middleware/auth.js';
@@ -190,6 +191,29 @@ export const bandService = {
 
   async deactivate(auth: AuthContext, id: string, ctx: Ctx) {
     return transition(auth, id, 'DECOMMISSIONED', {}, 'BAND_DECOMMISSIONED', auditCtx(ctx));
+  },
+
+  /** Create/rotate the phone-tap link token. Anyone with the link can check this band in. */
+  async rotateTapLink(auth: AuthContext, id: string, ctx: Ctx) {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new ApiError(404, 'NOT_FOUND', 'Band not found');
+    const scope = orgFilter(auth);
+    const band = await NFCBand.findOne({ _id: id, ...scope });
+    if (!band) throw new ApiError(404, 'NOT_FOUND', 'Band not found');
+    band.set('tapToken', crypto.randomBytes(32).toString('hex'));
+    band.set('updatedBy', new mongoose.Types.ObjectId(auth.userId));
+    await band.save();
+    await writeAudit({
+      organizationId: String(band.organizationId),
+      actorId: auth.userId,
+      action: 'BAND_TAP_LINK_ROTATED',
+      entityType: 'NFCBand',
+      entityId: String(band._id),
+      newState: { bandId: band.bandId },
+      ipAddress: ctx.ip,
+      userAgent: ctx.ua,
+      requestId: ctx.requestId,
+    });
+    return { tapToken: band.get('tapToken') as string };
   },
 
   async replace(auth: AuthContext, id: string, input: ReplaceBandInput, ctx: Ctx) {

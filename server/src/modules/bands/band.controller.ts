@@ -102,4 +102,12 @@ export const bandController = {
       next(e);
     }
   },
+
+  async rotateTapLink(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.status(201).json({ success: true, data: await bandService.rotateTapLink(req.auth!, req.params.id, ctx(req)), requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
 };
