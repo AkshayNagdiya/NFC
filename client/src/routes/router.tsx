@@ -25,6 +25,7 @@ const NotificationsPage = lazy(() => import('../features/notifications/Notificat
 const AuditPage = lazy(() => import('../features/audit/AuditPage').then((m) => ({ default: m.AuditPage })));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const ProfilesPage = lazy(() => import('../features/profiles/ProfilesPage').then((m) => ({ default: m.ProfilesPage })));
+const MyTapCardPage = lazy(() => import('../features/profiles/MyTapCardPage').then((m) => ({ default: m.MyTapCardPage })));
 
 function Lazy({ children }: { children: React.ReactNode }): JSX.Element {
   return (
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
           { path: '/bands/issue', element: l(<IssueBandPage />) },
           { path: '/bands/:id', element: l(<BandDetailPage />) },
           { path: '/profiles', element: l(<ProfilesPage />) },
+          { path: '/my-card', element: l(<MyTapCardPage />) },
           { path: '/devices', element: l(<DevicesPage />) },
           { path: '/locations', element: l(<LocationsPage />) },
           { path: '/attendance', element: l(<AttendancePage />) },

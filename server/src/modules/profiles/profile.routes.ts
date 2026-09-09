@@ -5,6 +5,7 @@ import { profileController } from './profile.controller.js';
 import {
   getProfileSchema,
   listProfilesSchema,
+  myProfileSchema,
   publicProfileSchema,
   updateProfileSchema,
   upsertProfileSchema,
@@ -17,6 +18,10 @@ profileRoutes.get('/p/:slug', validate(publicProfileSchema), profileController.p
 profileRoutes.get('/p/:slug/vcard', validate(publicProfileSchema), profileController.vcard);
 
 profileRoutes.use(requireAuth);
+// Self-service for every login (no permission needed) — holders fill their own card.
+// Defined before /:id so "me" is never treated as an id.
+profileRoutes.get('/me', profileController.mine);
+profileRoutes.post('/me', validate(myProfileSchema), profileController.upsertMine);
 profileRoutes.get('/', requirePerm('users.read'), validate(listProfilesSchema), profileController.list);
 profileRoutes.get('/:id', requirePerm('users.read'), validate(getProfileSchema), profileController.get);
 profileRoutes.post('/', requirePerm('users.update'), validate(upsertProfileSchema), profileController.upsert);

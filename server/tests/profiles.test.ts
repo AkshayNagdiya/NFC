@@ -117,4 +117,27 @@ describe('Tap profiles (digital business cards)', () => {
     const list = await request(app).get('/api/profiles').set('Authorization', `Bearer ${fx.adminB.token}`);
     expect(list.body.data.total).toBe(0);
   });
+
+  it('self-service: any login manages only their own card', async () => {
+    // No profile yet.
+    expect((await request(app).get('/api/profiles/me').set('Authorization', opAuth())).status).toBe(404);
+    // Create own (STUDENT-style login with zero permissions would also pass requireAuth).
+    const { userId: _ignored, ...mine } = base('unused');
+    const created = await request(app).post('/api/profiles/me').set('Authorization', opAuth()).send(mine);
+    expect(created.status).toBe(201);
+    expect(created.body.data.slug).toBe('asha-fixture');
+    // Read back + update own.
+    const read = await request(app).get('/api/profiles/me').set('Authorization', opAuth());
+    expect(read.status).toBe(200);
+    expect(read.body.data.displayName).toBe('Asha Fixture');
+    // Other holders are invisible to this endpoint (still 404-free own record only).
+    const other = await request(app).get('/api/profiles/me').set('Authorization', adminAuth());
+    expect(other.status).toBe(404);
+  });
+
+  it('self-service requires login', async () => {
+    expect((await request(app).get('/api/profiles/me')).status).toBe(401);
+    const { userId: _ignored, ...mine } = base('unused');
+    expect((await request(app).post('/api/profiles/me').send(mine)).status).toBe(401);
+  });
 });

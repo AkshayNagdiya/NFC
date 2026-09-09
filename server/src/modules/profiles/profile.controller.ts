@@ -44,6 +44,23 @@ export const profileController = {
     }
   },
 
+  async mine(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.json({ success: true, data: await profileService.getMine(req.auth!), requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  async upsertMine(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await profileService.upsertMine(req.auth!, req.body, ctx(req));
+      res.status(201).json({ success: true, data, requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+
   async public(req: Request, res: Response, next: NextFunction) {
     try {
       res.json({ success: true, data: await profileService.getPublic(req.params.slug), requestId: req.requestId });

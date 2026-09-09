@@ -52,6 +52,11 @@ export const upsertProfileSchema = z.object({
   body: profileBody,
 });
 
+/** Self-service: same fields, holder is always the logged-in user. */
+export const myProfileSchema = z.object({
+  body: profileBody.omit({ userId: true }),
+});
+
 export const updateProfileSchema = z.object({
   params: z.object({ id: objectId }),
   body: profileBody.omit({ userId: true }).partial(),
@@ -63,3 +68,4 @@ export const publicProfileSchema = z.object({
 
 export type UpsertProfileInput = z.infer<typeof upsertProfileSchema>['body'];
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>['body'];
+export type MyProfileInput = z.infer<typeof myProfileSchema>['body'];

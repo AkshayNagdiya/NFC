@@ -5,7 +5,7 @@ import type { AuthContext } from '../../middleware/auth.js';
 import { writeAudit } from '../audit/audit.service.js';
 import { User } from '../users/user.model.js';
 import { Profile } from './profile.model.js';
-import type { UpdateProfileInput, UpsertProfileInput } from './profile.validators.js';
+import type { MyProfileInput, UpdateProfileInput, UpsertProfileInput } from './profile.validators.js';
 
 interface Ctx {
   ip?: string;
@@ -145,6 +145,19 @@ export const profileService = {
       requestId: ctx.requestId,
     });
     return profile.toObject();
+  },
+
+  /** Own profile for the logged-in holder (self-service, no permission needed). */
+  async getMine(auth: AuthContext) {
+    const scope = orgFilter(auth);
+    const profile = await Profile.findOne({ ...scope, userId: auth.userId }).lean();
+    if (!profile) throw new ApiError(404, 'NOT_FOUND', 'You have no tap profile yet.');
+    return profile;
+  },
+
+  /** Create or update your own profile. Holders can never touch another user. */
+  async upsertMine(auth: AuthContext, input: MyProfileInput, ctx: Ctx) {
+    return this.upsert(auth, { ...input, userId: auth.userId }, ctx);
   },
 
   /** Public page data + atomic view counter. Unpublished profiles 404 like missing ones. */

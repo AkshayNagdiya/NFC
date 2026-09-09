@@ -33,6 +33,7 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
       { to: '/users', label: 'Users', icon: Users, perm: 'users.read' },
       { to: '/bands', label: 'NFC Bands', icon: Nfc, perm: 'bands.read' },
       { to: '/profiles', label: 'Tap Profiles', icon: Contact, perm: 'users.update' },
+      { to: '/my-card', label: 'My Tap Card', icon: Contact },
       { to: '/devices', label: 'Devices', icon: Zap, perm: 'devices.read' },
       { to: '/locations', label: 'Locations', icon: MapPin, perm: 'locations.read' },
     ],

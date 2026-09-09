@@ -67,3 +67,24 @@ export function useUpdateProfile() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
   });
 }
+
+export type MyProfileForm = Omit<ProfileForm, 'userId'>;
+
+export function useMyProfile() {
+  return useQuery({
+    queryKey: ['my-profile'],
+    queryFn: async () => (await api.get('/profiles/me')).data.data as ProfileItem,
+    retry: false,
+  });
+}
+
+export function useUpsertMyProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: MyProfileForm) => (await api.post('/profiles/me', body)).data.data as ProfileItem,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-profile'] });
+      qc.invalidateQueries({ queryKey: ['profiles'] });
+    },
+  });
+}
