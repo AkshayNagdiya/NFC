@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dialogs on small screens: overlay scrolls, panel stays reachable (all devices). */
+div[role='dialog'],
+div[role='alertdialog'] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+div[role='dialog'] > *,
+div[role='alertdialog'] > * {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
 /* ————————————————————————————————
    AirData · Premium Black Design System
    Pixel-perfect · 4px grid · hairlines

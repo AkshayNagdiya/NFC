@@ -26,10 +26,10 @@ function CreateUserDialog({ onClose }: { onClose: () => void }): JSX.Element {
   const { register, handleSubmit, formState } = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="Add user">
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="Add user">
       <form
         onSubmit={handleSubmit((v) => create.mutate(v, { onSuccess: onClose }))}
-        className="w-full max-w-md space-y-4 rounded-xl border border-border bg-background p-6"
+        className="m-auto w-full max-w-md space-y-4 rounded-xl border border-border bg-background p-6"
       >
         <h2 className="font-semibold">Add User</h2>
         <div className="grid grid-cols-2 gap-3">

@@ -150,7 +150,7 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="Tap profile">
-      <div className="w-full max-w-lg space-y-4 rounded-xl border border-border bg-background p-6">
+      <div className="m-auto w-full max-w-lg space-y-4 rounded-xl border border-border bg-background p-4 sm:max-w-2xl sm:p-6">
         <h2 className="font-semibold">{initial ? 'Edit profile' : 'New profile'}</h2>
 
         {!initial && (
@@ -187,9 +187,9 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
         )}
 
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button disabled={pending || (!initial && !form.userId) || !form.displayName.trim()} onClick={save}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
+          <Button disabled={pending || (!initial && !form.userId) || !form.displayName.trim()} onClick={save} className="w-full sm:w-auto">
             {pending ? 'Saving…' : 'Save profile'}
           </Button>
         </div>

@@ -34,6 +34,26 @@ api.interceptors.response.use(
         useAuthStore.getState().logout();
       }
     }
+    // Surface the server's message (and first validation detail) instead of a bare status code.
+    const data = error.response?.data as { message?: string; details?: unknown } | undefined;
+    if (data?.message) {
+      const firstDetail = flattenFirstDetail(data.details);
+      error.message = firstDetail ? `${data.message}: ${firstDetail}` : data.message;
+    }
     return Promise.reject(error);
   },
 );
+
+function flattenFirstDetail(details: unknown): string | null {
+  try {
+    const fieldErrors = (details as { fieldErrors?: Record<string, string[]> })?.fieldErrors;
+    if (fieldErrors) {
+      for (const [path, msgs] of Object.entries(fieldErrors)) {
+        if (msgs?.length) return `${path} — ${msgs[0]}`;
+      }
+    }
+  } catch {
+    /* keep generic message */
+  }
+  return null;
+}

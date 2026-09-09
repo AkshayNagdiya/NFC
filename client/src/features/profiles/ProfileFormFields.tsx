@@ -41,13 +41,13 @@ export function ProfileFormFields({
 
       <div className="space-y-2">
         <p className="text-[12.5px] font-semibold text-white/85">Social links (max 12)</p>
-        {form.links.map((l, i) => (
-          <div key={i} className="flex gap-2">
-            <Input value={l.label} onChange={(e) => set('links', form.links.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder="Instagram" aria-label="Link label" />
-            <Input value={l.url} onChange={(e) => set('links', form.links.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" aria-label="Link URL" inputMode="url" />
-            <Button variant="secondary" onClick={() => set('links', form.links.filter((_, j) => j !== i))} aria-label="Remove link">✕</Button>
-          </div>
-        ))}
+          {form.links.map((l, i) => (
+            <div key={i} className="flex flex-col gap-2 sm:flex-row">
+              <Input value={l.label} onChange={(e) => set('links', form.links.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder="Instagram" aria-label="Link label" />
+              <Input value={l.url} onChange={(e) => set('links', form.links.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" aria-label="Link URL" inputMode="url" />
+              <Button variant="secondary" onClick={() => set('links', form.links.filter((_, j) => j !== i))} aria-label="Remove link" className="shrink-0 self-end sm:self-auto">✕</Button>
+            </div>
+          ))}
         {form.links.length < 12 && (
           <Button variant="secondary" onClick={() => set('links', [...form.links, { label: '', url: '' }])}><Plus size={15} /> Add link</Button>
         )}
