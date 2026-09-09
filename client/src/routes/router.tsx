@@ -4,6 +4,7 @@ import { AppLayout } from '../layouts/AppLayout';
 import { RequireAuth } from './guards';
 import { LoginPage } from '../features/auth/LoginPage';
 import { TapPage } from '../features/tap/TapPage';
+import { PublicProfilePage } from '../features/profiles/PublicProfilePage';
 import { Skeleton } from '../components/ui';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -23,6 +24,7 @@ const ReportsPage = lazy(() => import('../features/reports/ReportsPage').then((m
 const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const AuditPage = lazy(() => import('../features/audit/AuditPage').then((m) => ({ default: m.AuditPage })));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const ProfilesPage = lazy(() => import('../features/profiles/ProfilesPage').then((m) => ({ default: m.ProfilesPage })));
 
 function Lazy({ children }: { children: React.ReactNode }): JSX.Element {
   return (
@@ -37,6 +39,7 @@ const l = (el: React.ReactNode) => <Lazy>{el}</Lazy>;
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/t/:token', element: <TapPage /> },
+  { path: '/p/:slug', element: <PublicProfilePage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -49,6 +52,7 @@ export const router = createBrowserRouter([
           { path: '/bands', element: l(<BandsPage />) },
           { path: '/bands/issue', element: l(<IssueBandPage />) },
           { path: '/bands/:id', element: l(<BandDetailPage />) },
+          { path: '/profiles', element: l(<ProfilesPage />) },
           { path: '/devices', element: l(<DevicesPage />) },
           { path: '/locations', element: l(<LocationsPage />) },
           { path: '/attendance', element: l(<AttendancePage />) },

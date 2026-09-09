@@ -17,6 +17,7 @@ import {
   MapPin,
   CalendarDays,
   Zap,
+  Contact,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSocketLifecycle } from '../lib/socket';
@@ -31,6 +32,7 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
     items: [
       { to: '/users', label: 'Users', icon: Users, perm: 'users.read' },
       { to: '/bands', label: 'NFC Bands', icon: Nfc, perm: 'bands.read' },
+      { to: '/profiles', label: 'Tap Profiles', icon: Contact, perm: 'users.update' },
       { to: '/devices', label: 'Devices', icon: Zap, perm: 'devices.read' },
       { to: '/locations', label: 'Locations', icon: MapPin, perm: 'locations.read' },
     ],
