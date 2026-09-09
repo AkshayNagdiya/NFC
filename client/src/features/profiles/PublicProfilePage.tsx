@@ -75,7 +75,7 @@ export function PublicProfilePage(): JSX.Element {
     );
   }
 
-  const vcardUrl = `/api/profiles/p/${profile.slug}/vcard`;
+  const vcardUrl = `${import.meta.env.VITE_API_URL ?? '/api'}/profiles/p/${profile.slug}/vcard`;
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-md space-y-5 px-5 py-10">
