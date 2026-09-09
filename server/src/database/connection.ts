@@ -112,8 +112,11 @@ export async function connectDb(uri?: string): Promise<void> {
   // If USE_MEMORY_DB is explicitly set in development
   if (env.USE_MEMORY_DB && env.NODE_ENV !== 'production') {
     logger.info('USE_MEMORY_DB enabled: Starting in-memory MongoDB...');
-    const { MongoMemoryServer } = await import('mongodb-memory-server');
-    const mem = await MongoMemoryServer.create();
+    // Dev-only: loaded via indirection so production builds don't require the package.
+    const memMod = (await Function('return import("mongodb-memory-server")')()) as {
+      MongoMemoryServer: { create: () => Promise<{ stop: () => Promise<boolean>; getUri: (db: string) => string }> };
+    };
+    const mem = await memMod.MongoMemoryServer.create();
     memoryServerInstance = mem;
     const memUri = mem.getUri('nfc_band_management');
     await mongoose.connect(memUri);
@@ -145,8 +148,11 @@ export async function connectDb(uri?: string): Promise<void> {
         'Could not connect to configured database. Falling back to local in-memory MongoDB for seamless development...',
       );
       try {
-        const { MongoMemoryServer } = await import('mongodb-memory-server');
-        const mem = await MongoMemoryServer.create();
+        // Dev-only fallback: loaded via indirection so production builds don't require the package.
+        const memMod = (await Function('return import("mongodb-memory-server")')()) as {
+          MongoMemoryServer: { create: () => Promise<{ stop: () => Promise<boolean>; getUri: (db: string) => string }> };
+        };
+        const mem = await memMod.MongoMemoryServer.create();
         memoryServerInstance = mem;
         const memUri = mem.getUri('nfc_band_management');
         await mongoose.connect(memUri);
