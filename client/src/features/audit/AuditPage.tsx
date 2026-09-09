@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { api } from '../../lib/api';
 import { useDebounced } from '../../hooks/hooks';
-import { EmptyState, ErrorState, Input, PageHeader, Pagination, TableSkeleton } from '../../components/ui';
+import { EmptyState, ErrorState, Input, PageHeader, Pagination, ResponsiveTable, TableSkeleton } from '../../components/ui';
 
 interface AuditItem {
   _id: string;
@@ -42,23 +42,17 @@ export function AuditPage(): JSX.Element {
       {query.isError && <ErrorState message={(query.error as Error).message} onRetry={() => query.refetch()} />}
       {query.data && query.data.items.length === 0 && <EmptyState title="No audit records" body="Actions like band blocks, refunds, and corrections are recorded here." />}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Action</th><th className="px-4 py-2.5">Entity</th><th className="px-4 py-2.5">Actor</th><th className="px-4 py-2.5">When</th></tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((a) => (
-                <tr key={a._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5 font-mono text-xs">{a.action}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{a.entityType} · {String(a.entityId).slice(-8)}</td>
-                  <td className="px-4 py-2.5">{typeof a.actorId === 'object' ? `${a.actorId.firstName} ${a.actorId.lastName}` : '—'}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground" title={a.requestId}>{format(new Date(a.createdAt), 'PP p')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="Audit records"
+          rows={query.data.items}
+          keyOf={(a) => a._id}
+          columns={[
+            { header: 'Action', render: (a) => <span className="break-all font-mono text-xs">{a.action}</span> },
+            { header: 'Entity', hideOnMobile: true, render: (a) => <span className="text-muted-foreground text-xs">{a.entityType} · {String(a.entityId).slice(-8)}</span> },
+            { header: 'Actor', render: (a) => typeof a.actorId === 'object' ? `${a.actorId.firstName} ${a.actorId.lastName}` : '—' },
+            { header: 'When', render: (a) => <span className="text-muted-foreground" title={a.requestId}>{format(new Date(a.createdAt), 'PP p')}</span> },
+          ]}
+        />
       )}
       {query.data && <Pagination page={query.data.page} totalPages={query.data.totalPages} onPage={setPage} />}
     </div>

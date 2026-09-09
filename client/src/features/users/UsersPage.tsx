@@ -6,10 +6,10 @@ import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useDebounced } from '../../hooks/hooks';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, Pagination, Select, TableSkeleton } from '../../components/ui';
+import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, Pagination, ResponsiveTable, Select, TableSkeleton } from '../../components/ui';
 import { useCreateUser, useUpdateUser, useUsers } from './usersApi';
 
-const ROLES = ['ADMIN', 'MANAGER', 'OPERATOR', 'SECURITY', 'FINANCE', 'VIEWER'];
+const ROLES = ['ADMIN', 'MANAGER', 'OPERATOR', 'SECURITY', 'FINANCE', 'VIEWER', 'STUDENT'];
 
 const createSchema = z.object({
   email: z.string().email(),
@@ -99,35 +99,30 @@ export function UsersPage(): JSX.Element {
         />
       )}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Name</th><th className="px-4 py-2.5">Email</th><th className="px-4 py-2.5">Role</th><th className="px-4 py-2.5">Status</th><th className="px-4 py-2.5">Last login</th><th className="px-4 py-2.5">Actions</th></tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((u) => (
-                <tr key={u._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5 font-medium">{u.firstName} {u.lastName}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{u.email}</td>
-                  <td className="px-4 py-2.5"><Badge value={u.role} /></td>
-                  <td className="px-4 py-2.5"><Badge value={u.status} /></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{u.lastLoginAt ? format(new Date(u.lastLoginAt), 'PP p') : '—'}</td>
-                  <td className="px-4 py-2.5">
-                    {hasPerm('users.update') && (
-                      <Button
-                        variant="secondary"
-                        disabled={update.isPending}
-                        onClick={() => update.mutate({ id: u._id, body: { status: u.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' } })}
-                      >
-                        {u.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="Users"
+          rows={query.data.items}
+          keyOf={(u) => u._id}
+          columns={[
+            { header: 'Name', render: (u) => <span className="font-medium">{u.firstName} {u.lastName}</span> },
+            { header: 'Email', render: (u) => <span className="break-all text-muted-foreground">{u.email}</span> },
+            { header: 'Role', render: (u) => <Badge value={u.role} /> },
+            { header: 'Status', render: (u) => <Badge value={u.status} /> },
+            { header: 'Last login', hideOnMobile: true, render: (u) => <span className="text-muted-foreground">{u.lastLoginAt ? format(new Date(u.lastLoginAt), 'PP p') : '—'}</span> },
+            {
+              header: 'Actions',
+              render: (u) => hasPerm('users.update') ? (
+                <Button
+                  variant="secondary"
+                  disabled={update.isPending}
+                  onClick={() => update.mutate({ id: u._id, body: { status: u.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE' } })}
+                >
+                  {u.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                </Button>
+              ) : null,
+            },
+          ]}
+        />
       )}
       {query.data && <Pagination page={query.data.page} totalPages={query.data.totalPages} onPage={setPage} />}
       {creating && <CreateUserDialog onClose={() => setCreating(false)} />}

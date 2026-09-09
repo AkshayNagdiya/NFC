@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, Select, TableSkeleton } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, Field, Input, PageHeader, ResponsiveTable, Select, TableSkeleton } from '../../components/ui';
 import { useAccessEvents, useAccessRules, useCreateRule, useUpdateRule } from './accessApi';
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -33,31 +33,27 @@ export function AccessPage(): JSX.Element {
           <EmptyState title="No access rules" body="Without rules, every ENTRY scan is denied. Create your first rule to open a gate." />
         )}
         {rules.data && rules.data.items.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
-                <tr><th className="py-2 pr-4">Rule</th><th className="py-2 pr-4">Scope</th><th className="py-2 pr-4">Window</th><th className="py-2 pr-4">Effect</th><th className="py-2 pr-4">Status</th>{canManage && <th className="py-2">Actions</th>}</tr>
-              </thead>
-              <tbody>
-                {rules.data.items.map((r) => (
-                  <tr key={r._id} className="border-b border-border last:border-0">
-                    <td className="py-2 pr-4 font-medium">{r.name}<span className="ml-2 text-xs text-muted-foreground">prio {r.priority}</span></td>
-                    <td className="py-2 pr-4 text-muted-foreground text-xs">{r.gateId ? `gate ${r.gateId.slice(-6)}` : r.locationId ? `loc ${r.locationId.slice(-6)}` : 'global'}</td>
-                    <td className="py-2 pr-4 text-xs">{r.days.length === 7 ? 'Daily' : r.days.join(',')} {r.startTime}–{r.endTime}</td>
-                    <td className="py-2 pr-4"><Badge value={r.effect} /></td>
-                    <td className="py-2 pr-4"><Badge value={r.status} /></td>
-                    {canManage && (
-                      <td className="py-2">
-                        <Button variant="secondary" disabled={update.isPending} onClick={() => update.mutate({ id: r._id, body: { status: r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } })}>
-                          {r.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                        </Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            framed={false}
+            label="Access rules"
+            rows={rules.data.items}
+            keyOf={(r) => r._id}
+            columns={[
+              { header: 'Rule', render: (r) => <span className="font-medium">{r.name}<span className="ml-2 text-xs font-normal text-muted-foreground">prio {r.priority}</span></span> },
+              { header: 'Scope', hideOnMobile: true, render: (r) => <span className="text-muted-foreground text-xs">{r.gateId ? `gate ${r.gateId.slice(-6)}` : r.locationId ? `loc ${r.locationId.slice(-6)}` : 'global'}</span> },
+              { header: 'Window', render: (r) => <span className="text-xs">{r.days.length === 7 ? 'Daily' : r.days.join(',')} {r.startTime}–{r.endTime}</span> },
+              { header: 'Effect', render: (r) => <Badge value={r.effect} /> },
+              { header: 'Status', render: (r) => <Badge value={r.status} /> },
+              ...(canManage ? [{
+                header: 'Actions',
+                render: (r: (typeof rules.data.items)[number]) => (
+                  <Button variant="secondary" disabled={update.isPending} onClick={() => update.mutate({ id: r._id, body: { status: r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } })}>
+                    {r.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                  </Button>
+                ),
+              }] : []),
+            ]}
+          />
         )}
       </Card>
 

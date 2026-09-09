@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Download, Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useDebounced } from '../../hooks/hooks';
-import { Badge, Button, EmptyState, ErrorState, Input, PageHeader, Pagination, Select, TableSkeleton } from '../../components/ui';
+import { Badge, Button, EmptyState, ErrorState, Input, PageHeader, Pagination, ResponsiveTable, Select, TableSkeleton } from '../../components/ui';
 import { bandUserName, exportBandsCsv, useBands } from './bandsApi';
 
 const STATUSES = ['AVAILABLE', 'ASSIGNED', 'ACTIVE', 'BLOCKED', 'LOST', 'DAMAGED', 'EXPIRED', 'DECOMMISSIONED'];
@@ -55,25 +55,19 @@ export function BandsPage(): JSX.Element {
         />
       )}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Band ID</th><th className="px-4 py-2.5">NFC UID</th><th className="px-4 py-2.5">User</th><th className="px-4 py-2.5">Type</th><th className="px-4 py-2.5">Status</th><th className="px-4 py-2.5">Issued</th></tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((b) => (
-                <tr key={b._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5"><Link to={`/bands/${b._id}`} className="font-medium text-primary hover:underline">{b.bandId}</Link></td>
-                  <td className="px-4 py-2.5 font-mono text-xs">{b.nfcUid}</td>
-                  <td className="px-4 py-2.5">{bandUserName(b)}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{b.type}</td>
-                  <td className="px-4 py-2.5"><Badge value={b.status} /></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{b.issuedAt ? new Date(b.issuedAt).toLocaleDateString() : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="NFC bands"
+          rows={query.data.items}
+          keyOf={(b) => b._id}
+          columns={[
+            { header: 'Band ID', render: (b) => <Link to={`/bands/${b._id}`} className="font-medium text-primary hover:underline">{b.bandId}</Link> },
+            { header: 'NFC UID', render: (b) => <span className="break-all font-mono text-xs">{b.nfcUid}</span> },
+            { header: 'User', render: (b) => bandUserName(b) },
+            { header: 'Type', hideOnMobile: true, render: (b) => <span className="text-muted-foreground">{b.type}</span> },
+            { header: 'Status', render: (b) => <Badge value={b.status} /> },
+            { header: 'Issued', hideOnMobile: true, render: (b) => <span className="text-muted-foreground">{b.issuedAt ? new Date(b.issuedAt).toLocaleDateString() : '—'}</span> },
+          ]}
+        />
       )}
       {query.data && <Pagination page={query.data.page} totalPages={query.data.totalPages} onPage={setPage} />}
     </div>

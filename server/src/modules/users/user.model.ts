@@ -10,7 +10,7 @@ const userSchema = new Schema(
     lastName: { type: String, required: true, trim: true, maxlength: 80 },
     role: {
       type: String,
-      enum: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'OPERATOR', 'SECURITY', 'FINANCE', 'VIEWER'],
+      enum: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'OPERATOR', 'SECURITY', 'FINANCE', 'VIEWER', 'STUDENT'],
       required: true,
       index: true,
     },

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { forwardRef, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -59,29 +59,37 @@ export function Button({
 
 /* ————— Inputs ————— */
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>): JSX.Element {
-  return (
-    <input
-      {...props}
-      className={cn(
-        'premium-input h-10 w-full rounded-[10px] px-3.5 text-[13.5px] text-white outline-none',
-        props.className,
-      )}
-    />
-  );
-}
+// forwardRef: react-hook-form's register() passes a ref that must reach the DOM node,
+// otherwise typed values are never captured and every field fails as "Required".
+export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function Input(props, ref) {
+    return (
+      <input
+        {...props}
+        ref={ref}
+        className={cn(
+          'premium-input h-10 w-full rounded-[10px] px-3.5 text-[13.5px] text-white outline-none',
+          props.className,
+        )}
+      />
+    );
+  },
+);
 
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>): JSX.Element {
-  return (
-    <select
-      {...props}
-      className={cn(
-        'premium-input h-10 rounded-[10px] px-3 pr-8 text-[13.5px] text-white outline-none',
-        props.className,
-      )}
-    />
-  );
-}
+export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
+  function Select(props, ref) {
+    return (
+      <select
+        {...props}
+        ref={ref}
+        className={cn(
+          'premium-input h-10 rounded-[10px] px-3 pr-8 text-[13.5px] text-white outline-none',
+          props.className,
+        )}
+      />
+    );
+  },
+);
 
 export function Field({
   label,
@@ -226,6 +234,64 @@ export function TableWrap({ children }: { children: ReactNode }): JSX.Element {
     <div className="premium-card overflow-x-auto rounded-2xl">
       <table className="premium-table">{children}</table>
     </div>
+  );
+}
+
+/* ————— Responsive table: real table on desktop, stacked cards on phones ————— */
+
+export interface RTableColumn<T> {
+  header: string;
+  render: (row: T, index: number) => ReactNode;
+  /** Omit this column from the mobile card (still shown in the desktop table). */
+  hideOnMobile?: boolean;
+}
+
+export function ResponsiveTable<T>({
+  columns,
+  rows,
+  keyOf,
+  framed = true,
+  label,
+}: {
+  columns: RTableColumn<T>[];
+  rows: T[];
+  keyOf: (row: T, index: number) => string;
+  /** Wrap the desktop table in a bordered box (set false when already inside a Card). */
+  framed?: boolean;
+  label?: string;
+}): JSX.Element {
+  const mobileCols = columns.filter((c) => !c.hideOnMobile);
+  const [lead, ...rest] = mobileCols;
+  return (
+    <>
+      <div className={framed ? 'hidden overflow-x-auto rounded-xl border border-border md:block' : 'hidden overflow-x-auto md:block'} role="region" aria-label={label} tabIndex={0}>
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>{columns.map((c) => <th key={c.header} className="px-4 py-2.5">{c.header}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={keyOf(r, i)} className="border-b border-border last:border-0 hover:bg-muted/40">
+                {columns.map((c) => <td key={c.header} className="px-4 py-2.5">{c.render(r, i)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul className="space-y-2.5 md:hidden" aria-label={label}>
+        {rows.map((r, i) => (
+          <li key={keyOf(r, i)} className="min-w-0 space-y-1.5 rounded-xl border border-border p-3.5">
+            {lead && <div className="min-w-0 font-medium leading-snug">{lead.render(r, i)}</div>}
+            {rest.map((c) => (
+              <div key={c.header} className="flex min-w-0 items-start justify-between gap-3 text-[13px]">
+                <span className="shrink-0 uppercase tracking-wide text-muted-foreground text-[11px] pt-0.5">{c.header}</span>
+                <span className="min-w-0 text-right">{c.render(r, i)}</span>
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { useAuthStore } from '../../stores/authStore';
 import { inr } from '../../lib/format';
-import { Badge, Button, EmptyState, ErrorState, PageHeader, Pagination, Select, TableSkeleton, useConfirm } from '../../components/ui';
+import { Badge, Button, EmptyState, ErrorState, PageHeader, Pagination, ResponsiveTable, Select, TableSkeleton, useConfirm } from '../../components/ui';
 import { txnUserName, useRefund, useTransactions } from '../wallet/walletApi';
 
 export function TransactionsPage(): JSX.Element {
@@ -41,34 +41,32 @@ export function TransactionsPage(): JSX.Element {
         <EmptyState title="No transactions" body="Wallet credits, debits, refunds, and adjustments will appear here." />
       )}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">User</th><th className="px-4 py-2.5">Type</th><th className="px-4 py-2.5">Amount</th><th className="px-4 py-2.5">Balance after</th><th className="px-4 py-2.5">Status</th><th className="px-4 py-2.5">Date</th>{canRefund && <th className="px-4 py-2.5">Actions</th>}</tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((t) => (
-                <tr key={t._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5 font-medium">{txnUserName(t)}</td>
-                  <td className="px-4 py-2.5"><Badge value={t.type} /></td>
-                  <td className={`px-4 py-2.5 font-medium ${t.type === 'DEBIT' ? 'text-red-600' : 'text-green-700'}`}>
-                    {t.type === 'DEBIT' ? '−' : '+'}{inr(t.amountMinor)}
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{inr(t.balanceAfterMinor)}</td>
-                  <td className="px-4 py-2.5"><Badge value={t.status} /></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{format(new Date(t.createdAt), 'PP p')}</td>
-                  {canRefund && (
-                    <td className="px-4 py-2.5">
-                      {t.type === 'DEBIT' && t.status === 'SUCCESS' && (
-                        <Button variant="secondary" disabled={refund.isPending} onClick={() => doRefund(t._id)}>Refund</Button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="Transactions"
+          rows={query.data.items}
+          keyOf={(t) => t._id}
+          columns={[
+            { header: 'User', render: (t) => <span className="font-medium">{txnUserName(t)}</span> },
+            { header: 'Type', render: (t) => <Badge value={t.type} /> },
+            {
+              header: 'Amount',
+              render: (t) => (
+                <span className={`font-medium ${t.type === 'DEBIT' ? 'text-red-600' : 'text-green-700'}`}>
+                  {t.type === 'DEBIT' ? '−' : '+'}{inr(t.amountMinor)}
+                </span>
+              ),
+            },
+            { header: 'Balance after', render: (t) => <span className="text-muted-foreground">{inr(t.balanceAfterMinor)}</span> },
+            { header: 'Status', render: (t) => <Badge value={t.status} /> },
+            { header: 'Date', hideOnMobile: true, render: (t) => <span className="text-muted-foreground">{format(new Date(t.createdAt), 'PP p')}</span> },
+            ...(canRefund ? [{
+              header: 'Actions',
+              render: (t: (typeof query.data.items)[number]) => t.type === 'DEBIT' && t.status === 'SUCCESS' ? (
+                <Button variant="secondary" disabled={refund.isPending} onClick={() => doRefund(t._id)}>Refund</Button>
+              ) : null,
+            }] : []),
+          ]}
+        />
       )}
       {query.data && <Pagination page={query.data.page} totalPages={query.data.totalPages} onPage={setPage} />}
       {dialog}

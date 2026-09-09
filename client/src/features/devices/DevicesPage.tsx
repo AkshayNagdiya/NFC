@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { api } from '../../lib/api';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, Select, TableSkeleton } from '../../components/ui';
+import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, ResponsiveTable, Select, TableSkeleton } from '../../components/ui';
 
 interface DeviceItem {
   _id: string;
@@ -53,27 +53,25 @@ export function DevicesPage(): JSX.Element {
         <EmptyState title="No devices" body="Register the kiosk or reader at each gate to track health and heartbeat." action={<Button onClick={() => setCreating(true)}><Plus size={15} /> Register device</Button>} />
       )}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">Device</th><th className="px-4 py-2.5">Type</th><th className="px-4 py-2.5">Adapter</th><th className="px-4 py-2.5">Health</th><th className="px-4 py-2.5">Last heartbeat</th><th className="px-4 py-2.5">Actions</th></tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((d) => (
-                <tr key={d._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5 font-medium">{d.name}<span className="block font-mono text-xs text-muted-foreground">{d.deviceId}</span></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{d.type}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs">{d.adapterType}</td>
-                  <td className="px-4 py-2.5"><Badge value={d.health} /></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{d.lastHeartbeat ? formatDistanceToNow(new Date(d.lastHeartbeat), { addSuffix: true }) : 'never'}</td>
-                  <td className="px-4 py-2.5">
-                    <Button variant="secondary" disabled={heartbeat.isPending} onClick={() => heartbeat.mutate(d._id)}>Ping</Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="Devices"
+          rows={query.data.items}
+          keyOf={(d) => d._id}
+          columns={[
+            {
+              header: 'Device',
+              render: (d) => <span className="font-medium">{d.name}<span className="block font-mono text-xs font-normal text-muted-foreground">{d.deviceId}</span></span>,
+            },
+            { header: 'Type', hideOnMobile: true, render: (d) => <span className="text-muted-foreground">{d.type}</span> },
+            { header: 'Adapter', hideOnMobile: true, render: (d) => <span className="font-mono text-xs">{d.adapterType}</span> },
+            { header: 'Health', render: (d) => <Badge value={d.health} /> },
+            { header: 'Last heartbeat', render: (d) => <span className="text-muted-foreground">{d.lastHeartbeat ? formatDistanceToNow(new Date(d.lastHeartbeat), { addSuffix: true }) : 'never'}</span> },
+            {
+              header: 'Actions',
+              render: (d) => <Button variant="secondary" disabled={heartbeat.isPending} onClick={() => heartbeat.mutate(d._id)}>Ping</Button>,
+            },
+          ]}
+        />
       )}
       {creating && <RegisterDialog onClose={() => { setCreating(false); qc.invalidateQueries({ queryKey: ['devices'] }); }} />}
     </div>

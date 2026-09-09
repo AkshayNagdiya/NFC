@@ -3,6 +3,7 @@ import path from 'node:path';
 import mongoose from 'mongoose';
 import { env, uriForMode, resolveDbUris, type DbMode } from '../config/env.js';
 import { logger } from '../config/logger.js';
+import { ApiError } from '../utils/errors.js';
 
 let memoryServerInstance: { stop: () => Promise<boolean> } | null = null;
 
@@ -270,19 +271,23 @@ export async function switchDatabase(
   if (mode === 'cluster' && !customUri) {
     const resolved = clusterUri || getPersistedCustomUri() || '';
     if (!resolved) {
-      throw new Error(
+      throw new ApiError(
+        400,
+        'INVALID_STATE',
         'No Atlas URI configured. Set MONGODB_CLUSTER_URI in .env or paste a mongodb+srv:// URI.',
       );
     }
     target = resolved;
   }
   if (mode === 'local' && !customUri) target = localUri;
-  if (!validMongoUri(target)) throw new Error('Resolved URI is not a valid MongoDB connection string.');
+  if (!validMongoUri(target)) {
+    throw new ApiError(400, 'INVALID_STATE', 'Resolved URI is not a valid MongoDB connection string.');
+  }
 
   // 1. Verify before dropping the live connection.
   const probe = await testConnection(target);
   if (!probe.ok) {
-    throw new Error(`Target unreachable: ${probe.error}`);
+    throw new ApiError(503, 'DB_UNREACHABLE', `Target unreachable: ${probe.error}`);
   }
 
   // 2. Swap connections.

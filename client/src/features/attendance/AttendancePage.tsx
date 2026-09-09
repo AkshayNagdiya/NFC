@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, Plus } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, Pagination, Select, TableSkeleton } from '../../components/ui';
+import { Badge, Button, EmptyState, ErrorState, Field, Input, PageHeader, Pagination, ResponsiveTable, Select, TableSkeleton } from '../../components/ui';
 import { attUserName, useAttendance, useCheckIn, useCorrectAttendance } from './attendanceApi';
 
 interface UserRow { _id: string; firstName: string; lastName: string; email: string; }
@@ -65,29 +65,24 @@ export function AttendancePage(): JSX.Element {
         <EmptyState title="No attendance records" body={`Nobody checked in on ${date} yet. NFC check-ins appear here automatically.`} />
       )}
       {query.data && query.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5">User</th><th className="px-4 py-2.5">Check-in</th><th className="px-4 py-2.5">Check-out</th><th className="px-4 py-2.5">Status</th><th className="px-4 py-2.5">Late</th>{canManage && <th className="px-4 py-2.5">Actions</th>}</tr>
-            </thead>
-            <tbody>
-              {query.data.items.map((a) => (
-                <tr key={a._id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                  <td className="px-4 py-2.5 font-medium">{attUserName(a)}</td>
-                  <td className="px-4 py-2.5">{a.checkInAt ? new Date(a.checkInAt).toLocaleTimeString() : '—'}</td>
-                  <td className="px-4 py-2.5">{a.checkOutAt ? new Date(a.checkOutAt).toLocaleTimeString() : '—'}</td>
-                  <td className="px-4 py-2.5"><Badge value={a.status} /></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{a.minutesLate ? `${a.minutesLate}m` : '—'}</td>
-                  {canManage && (
-                    <td className="px-4 py-2.5">
-                      <Button variant="secondary" onClick={() => setCorrectId(a._id)}>Correct</Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          label="Attendance records"
+          rows={query.data.items}
+          keyOf={(a) => a._id}
+          columns={[
+            { header: 'User', render: (a) => <span className="font-medium">{attUserName(a)}</span> },
+            { header: 'Check-in', render: (a) => a.checkInAt ? new Date(a.checkInAt).toLocaleTimeString() : '—' },
+            { header: 'Check-out', render: (a) => a.checkOutAt ? new Date(a.checkOutAt).toLocaleTimeString() : '—' },
+            { header: 'Status', render: (a) => <Badge value={a.status} /> },
+            { header: 'Late', hideOnMobile: true, render: (a) => <span className="text-muted-foreground">{a.minutesLate ? `${a.minutesLate}m` : '—'}</span> },
+            ...(canManage ? [{
+              header: 'Actions',
+              render: (a: (typeof query.data.items)[number]) => (
+                <Button variant="secondary" onClick={() => setCorrectId(a._id)}>Correct</Button>
+              ),
+            }] : []),
+          ]}
+        />
       )}
       {query.data && <Pagination page={query.data.page} totalPages={query.data.totalPages} onPage={setPage} />}
       {manual && <ManualDialog onClose={() => setManual(false)} />}

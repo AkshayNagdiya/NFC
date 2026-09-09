@@ -37,7 +37,8 @@ export type RoleName =
   | 'OPERATOR'
   | 'SECURITY'
   | 'FINANCE'
-  | 'VIEWER';
+  | 'VIEWER'
+  | 'STUDENT';
 
 /** Default permission sets per role. Custom roles can override via DB. */
 export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
@@ -64,4 +65,6 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
   SECURITY: ['nfc.scan', 'access.read', 'access.manage', 'bands.read', 'attendance.read', 'audit.read'],
   FINANCE: ['wallet.read', 'wallet.manage', 'transactions.read', 'transactions.manage', 'reports.read'],
   VIEWER: ['bands.read', 'attendance.read', 'access.read', 'transactions.read', 'reports.read'],
+  /** Band holders check in via phone-tap links (no login needed), so no app permissions by default. */
+  STUDENT: [],
 };

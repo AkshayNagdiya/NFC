@@ -8,6 +8,7 @@ export const ROLES = [
   'SECURITY',
   'FINANCE',
   'VIEWER',
+  'STUDENT',
 ] as const;
 
 const roleEnum = z.enum(ROLES);
