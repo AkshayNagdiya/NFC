@@ -89,7 +89,11 @@ export function PosPage(): JSX.Element {
         .data.data as ChargeResult,
     onSuccess: (res, { tag, amountMinor }) => {
       setReceipt({ uid: tag.uid, at: new Date(), totalMinor: amountMinor, res });
-      if (res.result === 'SUCCESS') setCart([]);
+      if (res.result === 'SUCCESS') {
+        setCart([]);
+        // Refresh totals + recent sales immediately instead of waiting for the 30s poll.
+        qc.invalidateQueries({ queryKey: ['settlement'] });
+      }
     },
     onError: (e: unknown, vars) => {
       setReceipt({ uid: vars.tag.uid, at: new Date(), totalMinor: vars.amountMinor, res: { result: 'ERROR', message: (e as Error).message } });
