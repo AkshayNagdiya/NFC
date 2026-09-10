@@ -109,9 +109,17 @@ describe('notifications, audit, settings, reports', () => {
     expect(summary.body.data.bandsByStatus).toEqual([{ _id: 'AVAILABLE', count: 1 }]);
     expect(summary.body.data.activeUsers).toBe(2);
 
+    // CSV export is a paid feature — subscribe first (fixtures start on TRIAL).
+    await request(app).post('/api/billing/subscribe').set('Authorization', adminAuth()).send({ plan: 'BASIC', provider: 'MANUAL' });
     const csv = await request(app).get('/api/reports/export?domain=bands').set('Authorization', adminAuth());
     expect(csv.headers['content-type']).toMatch(/text\/csv/);
     expect(csv.text).toMatch(/NF-/);
+
+    // Back on TRIAL, export is refused with an upgrade hint.
+    const { Organization } = await import('../src/modules/organizations/organization.model.js');
+    await Organization.updateOne({ _id: fx.orgA.id }, { $set: { 'subscription.plan': 'TRIAL' } });
+    const trialDenied = await request(app).get('/api/reports/export?domain=bands').set('Authorization', adminAuth());
+    expect(trialDenied.status).toBe(402);
 
     const opDenied = await request(app).get('/api/reports/summary').set('Authorization', opAuth());
     expect(opDenied.status).toBe(403); // OPERATOR lacks reports.read

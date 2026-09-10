@@ -6,6 +6,7 @@ import { dayBounds, resolveTimezone } from '../../utils/timezone.js';
 import { Organization } from '../organizations/organization.model.js';
 import { WalletTransaction } from '../wallets/wallet.models.js';
 import { walletService } from '../wallets/wallet.service.js';
+import { assertFeature } from '../billing/subscription.js';
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
@@ -25,6 +26,7 @@ export const posService = {
    */
   async voidPayment(auth: AuthContext, transactionId: string, reason: string) {
     const scope = orgFilter(auth);
+    await assertFeature(scope.organizationId, 'pos');
     const txn = await WalletTransaction.findOne({ _id: transactionId, organizationId: scope.organizationId }).lean();
     if (!txn) throw new ApiError(404, 'NOT_FOUND', 'Transaction not found');
     if (txn.type !== 'DEBIT' || txn.status !== 'SUCCESS') {

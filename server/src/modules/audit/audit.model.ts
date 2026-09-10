@@ -6,7 +6,7 @@ const { model, models } = mongoose;
 const auditLogSchema = new Schema(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
-    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: false, index: true },
     action: { type: String, required: true, index: true },
     entityType: { type: String, required: true, index: true },
     entityId: { type: String, required: true, index: true },
@@ -15,6 +15,7 @@ const auditLogSchema = new Schema(
     ipAddress: { type: String },
     userAgent: { type: String },
     requestId: { type: String, index: true },
+    metadata: { type: Schema.Types.Mixed },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

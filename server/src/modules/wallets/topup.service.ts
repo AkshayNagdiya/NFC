@@ -19,6 +19,7 @@ import {
   verifyStripeWebhook,
   type LiveOrder,
 } from './gateway.js';
+import { assertFeature, assertSubscriptionWritable } from '../billing/subscription.js';
 
 type Provider = 'MANUAL' | 'UPI' | 'RAZORPAY' | 'STRIPE' | 'MOCK';
 
@@ -63,6 +64,7 @@ export const topupService = {
     }
     const holder = await User.findOne({ _id: userId, organizationId: scope.organizationId }).select('_id status').lean();
     if (!holder) throw new ApiError(404, 'NOT_FOUND', 'User not found');
+    await assertSubscriptionWritable(scope.organizationId);
 
     const org = await Organization.findById(scope.organizationId).select('settings').lean();
     const settings = (org?.settings ?? {}) as { minTopupMinor?: number; maxTopupMinor?: number; upiPayeeVpa?: string; upiPayeeName?: string };
@@ -75,6 +77,12 @@ export const topupService = {
     const provider: Provider = input.provider ?? 'UPI';
     const method = input.method ?? (provider === 'MANUAL' ? 'CASH' : 'UPI');
     const idemKey = input.idempotencyKey ?? `topup_${randomUUID()}`;
+    // Live gateway checkout is a paid-plan feature; local/manual orders always work.
+    if (provider === 'RAZORPAY' || provider === 'STRIPE') {
+      const cfg = gatewayConfig();
+      const live = provider === 'RAZORPAY' ? cfg.razorpay.enabled : cfg.stripe.enabled;
+      if (live) await assertFeature(scope.organizationId, 'onlinePayments');
+    }
 
     const existing = await Payment.findOne({ organizationId: scope.organizationId, idempotencyKey: idemKey }).lean();
     if (existing) {

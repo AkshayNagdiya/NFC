@@ -23,6 +23,8 @@ import { cn } from '../lib/utils';
 import { useSocketLifecycle } from '../lib/socket';
 import { TopBar } from '../components/TopBar';
 import { useSwUpdate } from '../features/nfc/useSwUpdate';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
 
@@ -64,6 +66,7 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
   {
     section: 'System',
     items: [
+      { to: '/billing', label: 'Billing', icon: Receipt },
       { to: '/notifications', label: 'Notifications', icon: Bell },
       { to: '/audit', label: 'Audit Logs', icon: ScrollText, perm: 'audit.read' },
       { to: '/settings', label: 'Settings', icon: Settings, perm: 'settings.manage' },
@@ -71,8 +74,34 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
   },
 ];
 
-function SwUpdateBanner(): JSX.Element | null {
-  const { available, apply } = useSwUpdate();
+function BillingBanner(): JSX.Element | null {
+  const { data } = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: async () => (await api.get('/billing/status')).data.data as {
+      status: string; trialEndsAt?: string; graceUntil?: string; periodEnd?: string;
+    },
+    staleTime: 60000,
+    retry: false,
+  });
+  if (!data) return null;
+  const now = Date.now();
+  const writable =
+    data.status === 'ACTIVE' ||
+    data.status === 'TRIALING' ||
+    (data.status === 'PAST_DUE' && !!data.graceUntil && new Date(data.graceUntil).getTime() >= now) ||
+    (data.status === 'CANCELED' && !!data.periodEnd && new Date(data.periodEnd).getTime() >= now);
+  if (writable) return null;
+  return (
+    <div className="mx-auto w-full max-w-[1360px] px-4 pt-4 sm:px-6 lg:px-8" role="alert">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200">
+        <span>Billing needs attention ({data.status.toLowerCase()}) — adding users, bands and orders is paused. Gates keep scanning.</span>
+        <a href="/billing" className="rounded-lg bg-[#D4A853] px-4 py-1.5 font-semibold text-black hover:bg-[#E5BE6B]">Open billing</a>
+      </div>
+    </div>
+  );
+}
+
+function SwUpdateBanner(): JSX.Element | null {  const { available, apply } = useSwUpdate();
   if (!available) return null;
   return (
     <div className="mx-auto w-full max-w-[1360px] px-4 pt-4 sm:px-6 lg:px-8" role="status">
@@ -278,6 +307,7 @@ export function AppLayout(): JSX.Element {
       {/* ——— Main column ——— */}
       <div className={cn('flex min-h-screen flex-col transition-[padding] duration-300', collapsed ? 'lg:pl-[76px]' : 'lg:pl-[272px]')}>
         <TopBar />
+        <BillingBanner />
         <SwUpdateBanner />
         <main id="main-content" className="mx-auto w-full max-w-[1360px] flex-1 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           <div className="page-enter">

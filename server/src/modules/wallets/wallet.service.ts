@@ -9,6 +9,7 @@ import { Notification } from '../notifications/notification.model.js';
 import { emitToOrg } from '../../sockets/index.js';
 import { User } from '../users/user.model.js';
 import { Payment, Wallet, WalletTransaction } from './wallet.models.js';
+import { actorAttribution } from '../../utils/actors.js';
 
 interface Ctx {
   ip?: string;
@@ -111,6 +112,7 @@ export const walletService = {
 
     let row;
     try {
+      const attribution = actorAttribution(op.actorId);
       row = await WalletTransaction.create({
         organizationId: op.organizationId,
         walletId: wallet._id,
@@ -120,10 +122,10 @@ export const walletService = {
         balanceAfterMinor: wallet.balanceMinor, // provisional; finalized below
         status: 'PENDING',
         idempotencyKey: idemKey,
-        actorId: op.actorId,
+        actorId: attribution.actorId,
         reason: op.reason,
         scanId: op.scanId,
-        metadata: op.metadata,
+        metadata: { ...(op.metadata ?? {}), ...(attribution.apiKey ? { apiKey: attribution.apiKey } : {}) },
       });
     } catch (e: unknown) {
       if ((e as { code?: number }).code === 11000) {
@@ -211,6 +213,7 @@ export const walletService = {
   async credit(op: MoneyOp) {
     const out = await this.apply({ ...op, type: 'CREDIT', signedDelta: op.amountMinor });
     if (op.metadata?.method && !out.replay) {
+      const attribution = actorAttribution(op.actorId);
       await Payment.create({
         organizationId: op.organizationId,
         userId: op.userId,
@@ -218,7 +221,8 @@ export const walletService = {
         amountMinor: op.amountMinor,
         method: op.metadata.method,
         status: 'SUCCESS',
-        actorId: op.actorId,
+        actorId: attribution.actorId,
+        metadata: attribution.apiKey ? { apiKey: attribution.apiKey } : undefined,
       });
     }
     return out;

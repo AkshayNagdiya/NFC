@@ -123,3 +123,14 @@ Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `
 
 - Job runs on boot + every 5 min (`SWEEP_ENABLED=false` disables; skipped in tests): cancels `PENDING` top-up orders past `expiresAt`, expires visitor passes past `validTo`.
 - `POST /api/system/sweeps` (`settings.manage`) — manual run, returns `{ topupsCancelled, passesExpired }`.
+
+## Billing (enterprise subscriptions)
+
+- Plans: free `TRIAL` (14d) + paid `BASIC` → `ADVANCED` → `PRO`, with user/band/location/event caps and per-feature flags (`onlinePayments`, `pos`, `visitors`, `events`, `tapProfiles`, `reportsExport`, `apiAccess`).
+- `GET /api/billing/plans` (any auth), `GET /api/billing/status` (any auth) — plan, usage vs limits, effective features (plan + overrides), trial/period/grace dates.
+- `POST /api/billing/subscribe` `{ plan, provider: MANUAL|RAZORPAY|STRIPE, billingEmail? }` (`settings.manage`) — MANUAL activates immediately (audited offline invoice); RAZORPAY returns `{ subscriptionId, checkoutUrl }` (needs `RAZORPAY_PLAN_<TIER>`); STRIPE returns a first-invoice `clientSecret` (needs `STRIPE_PRICE_<TIER>`).
+- `POST /api/billing/cancel` (`settings.manage`) — remote cancel best-effort, local state flips regardless; access holds till `periodEnd`.
+- `POST /api/billing/webhook/razorpay|stripe` — HMAC-verified subscription lifecycle (`activated/charged` → ACTIVE, failures → PAST_DUE + 7d grace, cancel/delete → CANCELED).
+- `GET/POST/DELETE /api/billing/keys` (`settings.manage`, requires `apiAccess`) — Stripe-style org API keys with least-privilege scopes, shown once. Integrators send `X-Api-Key`; a user session always wins when both present.
+- Enforcement (402 `FORBIDDEN`): expired/graced-out orgs cannot create users, register bands, or open top-up intents; premium creation (visitors, events, profiles, exports, settlement/void) needs its feature flag. **Operational scans, check-ins and charges never block.**
+- Super-admin: `GET /api/billing/orgs?search=` (usage included), `PATCH /api/billing/orgs/:id` — assign plan/status, extend trial/period, per-feature allow/deny/clear overrides, suspend/restore the org. Every change audited + socket-emitted.

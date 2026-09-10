@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { unauthorized, forbidden } from '../utils/errors.js';
 import { verifyAccessToken } from '../modules/auth/auth.tokens.js';
+import { authFromApiKey } from '../modules/billing/apiKeys.js';
 
 export interface AuthContext {
   userId: string;
@@ -27,14 +28,27 @@ function bearerToken(req: Request): string | null {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-/** Requires a valid JWT. Never trust client-sent org/role — always derive from token. */
-export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
-  const token = bearerToken(req);
-  if (!token) {
-    next(unauthorized('Missing access token'));
-    return;
-  }
+/** Requires a valid JWT (or org API key via X-Api-Key). Never trust client-sent org/role — always derive from token. */
+export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const apiKey = req.headers['x-api-key'];
   try {
+    // Service identity for integrators (plan-gated at key creation). A user
+    // session, when present, always wins over the header.
+    if (typeof apiKey === 'string' && apiKey && !bearerToken(req)) {
+      const keyAuth = await authFromApiKey(apiKey);
+      if (!keyAuth) {
+        next(unauthorized('Invalid API key'));
+        return;
+      }
+      req.auth = keyAuth;
+      next();
+      return;
+    }
+    const token = bearerToken(req);
+    if (!token) {
+      next(unauthorized('Missing access token'));
+      return;
+    }
     const p = verifyAccessToken(token);
     req.auth = {
       userId: p.sub,

@@ -28,6 +28,7 @@ const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then
 const ProfilesPage = lazy(() => import('../features/profiles/ProfilesPage').then((m) => ({ default: m.ProfilesPage })));
 const MyTapCardPage = lazy(() => import('../features/profiles/MyTapCardPage').then((m) => ({ default: m.MyTapCardPage })));
 const PosPage = lazy(() => import('../features/pos/PosPage').then((m) => ({ default: m.PosPage })));
+const BillingPage = lazy(() => import('../features/billing/BillingPage').then((m) => ({ default: m.BillingPage })));
 const VisitorsPage = lazy(() => import('../features/visitors/VisitorsPage').then((m) => ({ default: m.VisitorsPage })));
 
 function Lazy({ children }: { children: React.ReactNode }): JSX.Element {
@@ -66,6 +67,7 @@ export const router = createBrowserRouter([
           { path: '/events', element: l(<EventsPage />) },
           { path: '/wallet', element: l(<WalletPage />) },
           { path: '/pos', element: l(<PosPage />) },
+          { path: '/billing', element: l(<BillingPage />) },
           { path: '/visitors', element: l(<VisitorsPage />) },
           { path: '/transactions', element: l(<TransactionsPage />) },
           { path: '/reports', element: l(<ReportsPage />) },

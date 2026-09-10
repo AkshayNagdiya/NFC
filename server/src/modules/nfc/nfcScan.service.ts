@@ -17,6 +17,7 @@ import { Gate, Location } from '../locations/location.models.js';
 import { Organization } from '../organizations/organization.model.js';
 import { User } from '../users/user.model.js';
 import { NFCScan, type SCAN_RESULTS } from './nfcScan.model.js';
+import { actorIdOrUndefined } from '../../utils/actors.js';
 import { getAdapter } from './nfcReader.service.js';
 import type { ScanInput } from './nfc.validators.js';
 
@@ -222,12 +223,13 @@ export const nfcScanService = {
       action: input.action,
       result,
       failureReason,
-      operatorId: auth.userId,
+      operatorId: actorIdOrUndefined(auth.userId),
       timestamp: now,
       requestId: effectiveRequestId,
       metadata: {
         ...(input.metadata ?? {}),
         ...(paymentTxn?._id ? { walletTransactionId: String(paymentTxn._id) } : {}),
+        ...(actorIdOrUndefined(auth.userId) ? {} : { apiKey: auth.userId }),
       },
     });
 
@@ -424,7 +426,7 @@ async function applySideEffects(
       ruleId: access?.ruleId,
       reason: decision === 'DENY' ? (access?.reason ?? `Scan result: ${result}`) : undefined,
       scanId,
-      operatorId: auth.userId,
+      operatorId: actorIdOrUndefined(auth.userId),
       timestamp: now,
     });
     return { accessEvent: ev.toObject() };

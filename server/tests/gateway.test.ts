@@ -8,6 +8,11 @@ import { verifyRazorpayCallback, verifyStripeWebhook } from '../src/modules/wall
 let fx: Fixture;
 const oid = (id: string): mongoose.Types.ObjectId => new mongoose.Types.ObjectId(id);
 
+/** Live gateway checkout is a paid-plan feature — upgrade before live intents. */
+async function upgradeToPro(): Promise<void> {
+  await request(app).post('/api/billing/subscribe').set('Authorization', `Bearer ${fx.adminA.token}`).send({ plan: 'PRO', provider: 'MANUAL' });
+}
+
 const RZ_SECRET = 'rz_test_secret_123';
 const ST_SECRET = 'whsec_test_stripe_456';
 
@@ -76,6 +81,7 @@ describe('live gateway top-up', () => {
   });
 
   it('razorpay intent -> checkout callback credits exactly once', async () => {
+    await upgradeToPro();
     process.env.RAZORPAY_KEY_ID = 'rzp_test_id';
     process.env.RAZORPAY_KEY_SECRET = RZ_SECRET;
     stubFetch(() => ({ id: 'order_live123', amount: 50000, currency: 'INR' }));
@@ -110,6 +116,7 @@ describe('live gateway top-up', () => {
   });
 
   it('razorpay server event settles and enforces the amount', async () => {
+    await upgradeToPro();
     process.env.RAZORPAY_KEY_ID = 'rzp_test_id';
     process.env.RAZORPAY_KEY_SECRET = RZ_SECRET;
     process.env.RAZORPAY_WEBHOOK_SECRET = 'rzwhsec_1';
@@ -134,6 +141,7 @@ describe('live gateway top-up', () => {
   });
 
   it('stripe intent -> webhook credits; amount mismatch is refused', async () => {
+    await upgradeToPro();
     process.env.STRIPE_SECRET_KEY = 'sk_test_123';
     process.env.STRIPE_WEBHOOK_SECRET = ST_SECRET;
     stubFetch(() => ({ id: 'pi_live1', client_secret: 'cs_live1', amount: 30000 }));
@@ -173,6 +181,7 @@ describe('live gateway top-up', () => {
   });
 
   it('unreachable gateway fails the intent loudly instead of stranding money', async () => {
+    await upgradeToPro();
     process.env.RAZORPAY_KEY_ID = 'rzp_test_id';
     process.env.RAZORPAY_KEY_SECRET = RZ_SECRET;
     vi.stubGlobal('fetch', async () => {

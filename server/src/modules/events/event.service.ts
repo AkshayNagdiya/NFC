@@ -8,6 +8,7 @@ import { Location } from '../locations/location.models.js';
 import { NFCScan } from '../nfc/nfcScan.model.js';
 import { User } from '../users/user.model.js';
 import { OrgEvent } from './event.model.js';
+import { assertFeature, assertSubscriptionWritable } from '../billing/subscription.js';
 
 interface Ctx {
   ip?: string;
@@ -30,6 +31,8 @@ export const eventService = {
 
   async create(auth: AuthContext, input: Record<string, unknown>, ctx: Ctx) {
     const scope = orgFilter(auth);
+    await assertSubscriptionWritable(scope.organizationId);
+    await assertFeature(scope.organizationId, 'events');
     if (input.locationId) {
       const loc = await Location.findOne({ _id: input.locationId, ...scope }).select('_id').lean();
       if (!loc) throw new ApiError(404, 'NOT_FOUND', 'Location not found');

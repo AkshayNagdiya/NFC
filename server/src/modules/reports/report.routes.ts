@@ -12,6 +12,7 @@ import { NFCScan } from '../nfc/nfcScan.model.js';
 import { User } from '../users/user.model.js';
 import { WalletTransaction } from '../wallets/wallet.models.js';
 import { exportSchema, settlementSchema, summarySchema } from './report.validators.js';
+import { assertFeature } from '../billing/subscription.js';
 import { dayBounds, resolveTimezone } from '../../utils/timezone.js';
 import { Organization } from '../organizations/organization.model.js';
 
@@ -41,6 +42,7 @@ reportRoutes.use(requireAuth);
  */
 reportRoutes.get('/settlement', requirePerm('reports.read', 'nfc.scan'), validate(settlementSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await assertFeature(req.auth!.organizationId, 'pos');
     const org = req.auth!.organizationId;
     const orgId = new mongoose.Types.ObjectId(org);
     const orgDoc = await Organization.findById(org).select('settings.timezone').lean();
@@ -151,6 +153,7 @@ const EXPORT_LIMIT = 5000;
 
 reportRoutes.get('/export', validate(exportSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await assertFeature(req.auth!.organizationId, 'reportsExport');
     const org = req.auth!.organizationId;
     const domain = req.query.domain as string;
     const from = req.query.from as string | undefined;

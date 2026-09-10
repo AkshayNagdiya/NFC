@@ -8,6 +8,7 @@ import { User } from '../users/user.model.js';
 import { NFCScan } from '../nfc/nfcScan.model.js';
 import { emitToOrg } from '../../sockets/index.js';
 import { VisitorPass } from './visitor.model.js';
+import { assertFeature, assertSubscriptionWritable } from '../billing/subscription.js';
 
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid id');
 
@@ -42,6 +43,8 @@ function endOfDay(): Date {
 export const visitorService = {
   async create(auth: AuthContext, input: { kind: 'VISITOR' | 'DAY_QR'; name: string; phone?: string; purpose?: string; userId?: string; validTo?: string; maxUses: number }) {
     const scope = orgFilter(auth);
+    await assertSubscriptionWritable(scope.organizationId);
+    await assertFeature(scope.organizationId, 'visitors');
     if (input.userId) {
       const holder = await User.findOne({ _id: input.userId, organizationId: scope.organizationId }).select('_id').lean();
       if (!holder) throw new ApiError(404, 'NOT_FOUND', 'User not found');
@@ -67,7 +70,8 @@ export const visitorService = {
       entityId: String(pass._id),
       newState: { kind: input.kind, name: input.name },
     });
-    return pass.toObject();
+    const created = pass.toObject() as Record<string, unknown> & { token: string };
+    return { ...created, checkinUrl: `/v/${created.token}` };
   },
 
   async list(auth: AuthContext, q: { page: number; pageSize: number; status?: string; kind?: string }) {

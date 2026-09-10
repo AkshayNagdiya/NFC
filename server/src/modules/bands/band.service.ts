@@ -8,6 +8,7 @@ import { notify } from '../notifications/notification.service.js';
 import { User } from '../users/user.model.js';
 import { NFCBand } from './band.model.js';
 import type { AssignBandInput, RegisterBandInput, ReplaceBandInput } from './band.validators.js';
+import { assertSubscriptionWritable, assertWithinLimit } from '../billing/subscription.js';
 
 type BandStatus =
   | 'AVAILABLE' | 'ASSIGNED' | 'ACTIVE' | 'BLOCKED'
@@ -125,6 +126,8 @@ export const bandService = {
 
   async register(auth: AuthContext, input: RegisterBandInput, ctx: Ctx) {
     const scope = orgFilter(auth);
+    await assertSubscriptionWritable(scope.organizationId);
+    await assertWithinLimit(scope.organizationId, 'bands');
     const nfcUid = input.nfcUid.toUpperCase();
     const dupe = await NFCBand.findOne({ nfcUid }).select('_id').lean();
     if (dupe) throw new ApiError(409, 'CONFLICT', 'NFC UID is already registered');

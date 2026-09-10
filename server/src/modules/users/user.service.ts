@@ -6,6 +6,7 @@ import { writeAudit } from '../audit/audit.service.js';
 import { hashPassword } from '../auth/auth.tokens.js';
 import { User } from './user.model.js';
 import type { CreateUserInput, UpdateUserInput } from './user.validators.js';
+import { assertSubscriptionWritable, assertWithinLimit } from '../billing/subscription.js';
 
 const PUBLIC_PROJECTION = 'organizationId email firstName lastName role permissions status lastLoginAt createdAt updatedAt';
 
@@ -55,6 +56,8 @@ export const userService = {
     const orgId = targetOrg(auth, input.organizationId);
     const exists = await User.findOne({ organizationId: orgId, email: input.email.toLowerCase() }).select('_id');
     if (exists) throw new ApiError(409, 'CONFLICT', 'Email already in use in this organization');
+    await assertSubscriptionWritable(orgId);
+    await assertWithinLimit(orgId, 'users');
 
     const user = await User.create({
       organizationId: orgId,

@@ -18,6 +18,7 @@ import { transactionRoutes, walletRoutes } from '../modules/wallets/wallet.route
 import { posRoutes } from '../modules/pos/pos.routes.js';
 import { userRoutes } from '../modules/users/user.routes.js';
 import { visitorPublicRoutes, visitorRoutes } from '../modules/visitors/visitor.routes.js';
+import { billingRoutes } from '../modules/billing/billing.routes.js';
 
 export const apiRoutes = Router();
 
@@ -42,6 +43,7 @@ apiRoutes.use('/system/sweeps', sweepsRoutes);
 apiRoutes.use('/reports', reportRoutes);
 apiRoutes.use('/visitors', visitorRoutes);
 apiRoutes.use('/v', visitorPublicRoutes);
+apiRoutes.use('/billing', billingRoutes);
 
 apiRoutes.get('/health', (req, res) => {
   res.json({ success: true, data: { ok: true, time: new Date().toISOString() }, requestId: req.requestId });

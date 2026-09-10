@@ -5,6 +5,7 @@ import type { AuthContext } from '../../middleware/auth.js';
 import { writeAudit } from '../audit/audit.service.js';
 import { User } from '../users/user.model.js';
 import { Profile } from './profile.model.js';
+import { assertFeature } from '../billing/subscription.js';
 import type { MyProfileInput, UpdateProfileInput, UpsertProfileInput } from './profile.validators.js';
 
 interface Ctx {
@@ -82,6 +83,7 @@ export const profileService = {
   /** One profile per user: creates on first publish, updates after. */
   async upsert(auth: AuthContext, input: UpsertProfileInput, ctx: Ctx) {
     const scope = orgFilter(auth);
+    await assertFeature(scope.organizationId, 'tapProfiles');
     await assertHolder(scope.organizationId, input.userId);
     const existing = await Profile.findOne({ ...scope, userId: input.userId });
     if (existing) {

@@ -38,7 +38,8 @@ const walletTxSchema = new Schema(
     status: { type: String, enum: WALLET_TX_STATUSES, default: 'SUCCESS', index: true },
     /** Client idempotency key. Unique per org — retries replay the original row. */
     idempotencyKey: { type: String, required: true, index: true },
-    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    /** User ObjectId, or absent for service-identity writes (see metadata.apiKey). */
+    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     reason: { type: String, maxlength: 500 },
     scanId: { type: Schema.Types.ObjectId, ref: 'NFCScan' },
     metadata: { type: Schema.Types.Mixed },
@@ -67,7 +68,7 @@ const paymentSchema = new Schema(
     method: { type: String, enum: ['CASH', 'UPI', 'CARD', 'NETBANKING', 'WALLET'], required: true },
     status: { type: String, enum: PAYMENT_STATUSES, default: 'PENDING', index: true },
     reference: { type: String, maxlength: 160, index: true },
-    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    actorId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     metadata: { type: Schema.Types.Mixed },
     /** Online top-up lifecycle. MANUAL = cash counter, UPI = upi:// intent, others = gateway orders. */
     provider: { type: String, enum: TOPUP_PROVIDERS, default: 'MANUAL', index: true },

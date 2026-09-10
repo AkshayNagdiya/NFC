@@ -7,6 +7,29 @@ const organizationSchema = new Schema(
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     status: { type: String, enum: ['ACTIVE', 'SUSPENDED'], default: 'ACTIVE', index: true },
     contactEmail: { type: String, trim: true },
+    billingEmail: { type: String, trim: true, maxlength: 160 },
+    subscription: {
+      plan: { type: String, default: 'TRIAL', index: true },
+      status: { type: String, enum: ['TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELED', 'EXPIRED'], default: 'TRIALING', index: true },
+      trialEndsAt: { type: Date, default: () => new Date(Date.now() + 14 * 24 * 3600 * 1000) },
+      periodEnd: { type: Date },
+      graceUntil: { type: Date },
+      provider: { type: String, enum: ['MANUAL', 'RAZORPAY', 'STRIPE'], default: 'MANUAL' },
+      providerId: { type: String, maxlength: 160, index: true },
+      /** Super-admin per-feature grants/denials. Present keys override the plan matrix. */
+      featureOverrides: { type: Map, of: Boolean, default: undefined },
+    },
+    apiKeys: {
+      type: [{
+        name: { type: String, required: true, trim: true, maxlength: 60 },
+        prefix: { type: String, required: true, index: true },
+        keyHash: { type: String, required: true },
+        permissions: { type: [String], required: true },
+        createdAt: { type: Date, default: Date.now },
+        lastUsedAt: { type: Date },
+      }],
+      default: [],
+    },
     settings: {
       timezone: { type: String, default: 'UTC' },
       attendanceLateAfter: { type: String, default: '09:30' },
