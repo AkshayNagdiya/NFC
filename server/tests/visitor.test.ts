@@ -23,6 +23,8 @@ describe('visitor & day-qr passes', () => {
     expect(created.status).toBe(201);
     const token = created.body.data.token as string;
     expect(token).toMatch(/^[0-9a-f]{64}$/);
+    // The QR-able gate link must ship with the create response (never "undefined").
+    expect(created.body.data.checkinUrl).toBe(`/v/${token}`);
 
     const in1 = await request(app)
       .post('/api/visitors/check-in')
