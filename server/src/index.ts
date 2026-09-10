@@ -5,6 +5,7 @@ import { logger } from './config/logger.js';
 import { connectDb } from './database/connection.js';
 import { initSockets } from './sockets/index.js';
 import { seedDatabase } from './seed.js';
+import { startSweeps } from './modules/system/sweeps.js';
 import { User } from './modules/users/user.model.js';
 
 async function main(): Promise<void> {
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
   const app = createApp();
   const httpServer = createServer(app);
   initSockets(httpServer);
+  startSweeps();
   httpServer.listen(env.PORT, () => {
     logger.info({ port: env.PORT, mode: env.NFC_READER_MODE }, 'API listening');
   });

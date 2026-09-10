@@ -95,7 +95,7 @@ export function PosPage(): JSX.Element {
     },
   });
 
-  const { mode, status } = useReader({
+  const { mode, setMode, status, beginPhoneScan, phoneActive, phoneError } = useReader({
     paused: charge.isPending || !isOnline || totalMinor <= 0,
     onTag: (tag) => {
       if (totalMinor <= 0 || !isOnline) return;
@@ -164,6 +164,31 @@ export function PosPage(): JSX.Element {
     <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader title="Canteen POS" subtitle={`Tap band to charge ${totalMinor > 0 ? inr(totalMinor) : ''} · reader ${status} (${mode})`} />
       {!isOnline && <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200" role="alert">Offline — payments are disabled until reconnect. Balances cannot be verified offline.</p>}
+
+      <Card className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <label className="flex items-center gap-2">
+            Reader
+            <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)} className="h-9 rounded-md border border-border bg-background px-2" aria-label="Reader adapter">
+              <option value="keyboard">Keyboard / USB reader</option>
+              <option value="phone">Phone NFC (tap to this phone)</option>
+              <option value="bridge">Local bridge (PC/SC · serial)</option>
+            </select>
+          </label>
+          {mode === 'phone' && !phoneActive && (
+            <Button onClick={beginPhoneScan}>Enable phone NFC</Button>
+          )}
+          {mode === 'phone' && phoneActive && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-300" role="status">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" aria-hidden /> Phone tap ready — hold band to this phone
+            </span>
+          )}
+        </div>
+        {mode === 'phone' && !phoneActive && (
+          <p className="text-xs text-muted-foreground">Phone-as-reader uses Web NFC (Android Chrome/Edge + HTTPS only — iPhone Safari cannot tap-scan). Tap the button, then hold the band to this phone.</p>
+        )}
+        {phoneError && <p className="text-sm text-red-600" role="alert">{phoneError}</p>}
+      </Card>
 
       <Card className="space-y-4">
         <h2 className="font-semibold">Menu {menu.length === 0 && <span className="font-normal text-muted-foreground">(empty — add items in Settings)</span>}</h2>

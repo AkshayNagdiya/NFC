@@ -12,6 +12,7 @@ import { notificationRoutes } from '../modules/notifications/notification.routes
 import { profileRoutes } from '../modules/profiles/profile.routes.js';
 import { settingsRoutes } from '../modules/organizations/organization.routes.js';
 import { databaseRoutes } from '../modules/system/database.routes.js';
+import { sweepsRoutes } from '../modules/system/sweeps.routes.js';
 import { reportRoutes } from '../modules/reports/report.routes.js';
 import { transactionRoutes, walletRoutes } from '../modules/wallets/wallet.routes.js';
 import { posRoutes } from '../modules/pos/pos.routes.js';
@@ -37,6 +38,7 @@ apiRoutes.use('/profiles', profileRoutes);
 apiRoutes.use('/audit-logs', auditRoutes);
 apiRoutes.use('/settings', settingsRoutes);
 apiRoutes.use('/system/database', databaseRoutes);
+apiRoutes.use('/system/sweeps', sweepsRoutes);
 apiRoutes.use('/reports', reportRoutes);
 apiRoutes.use('/visitors', visitorRoutes);
 apiRoutes.use('/v', visitorPublicRoutes);

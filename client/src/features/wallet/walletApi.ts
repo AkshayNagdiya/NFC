@@ -88,6 +88,22 @@ export interface TopupIntentResult {
   replay: boolean;
   upiIntent: string | null;
   qrPayload: string;
+  gateway?: { live: boolean; providerOrderId: string; keyId?: string; clientSecret?: string };
+}
+
+export function useTopupConfig() {
+  return useQuery({
+    queryKey: ['topup-config'],
+    queryFn: async () =>
+      (await api.get('/wallets/topup/config')).data.data as {
+        upi: { enabled: boolean };
+        manual: { enabled: boolean };
+        mock: { enabled: boolean };
+        razorpay: { enabled: boolean; keyId: string };
+        stripe: { enabled: boolean; publishableKey: string };
+      },
+    staleTime: 60000,
+  });
 }
 
 export function useTopupIntent() {

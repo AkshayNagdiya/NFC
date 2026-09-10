@@ -92,7 +92,12 @@ Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `
 
 ## Online wallet top-up
 
-- `POST /api/wallets/:userId/topup/intent` `{ amountMinor, provider: UPI|MANUAL|RAZORPAY|STRIPE|MOCK, method?, idempotencyKey? }` — any holder for self, else `wallet.manage`. Same key replays the same PENDING order. Returns `{ order, upiIntent, qrPayload }`.
+- `POST /api/wallets/:userId/topup/intent` `{ amountMinor, provider: UPI|MANUAL|RAZORPAY|STRIPE|MOCK, method?, idempotencyKey? }` — any holder for self, else `wallet.manage`. Same key replays the same PENDING order. Returns `{ order, upiIntent, qrPayload, gateway? }`.
+- `GET /api/wallets/topup/config` (any auth) — which providers are wired; exposes only public keys (Razorpay keyId, Stripe publishable key), never secrets.
+- Live gateways (no SDKs — plain HTTPS + HMAC):
+  - `RAZORPAY`: server creates a Razorpay order, client pays via checkout.js modal, the callback posts to `POST /api/wallets/topup/webhook/razorpay/callback` (fields HMAC with key secret). Server event `POST /api/wallets/topup/webhook/razorpay` verifies `x-razorpay-signature` over raw bytes (`payment.captured` settles, `payment.failed` fails).
+  - `STRIPE`: server creates a PaymentIntent (returns `clientSecret`), client confirms with Stripe.js card Element, `POST /api/wallets/topup/webhook/stripe` verifies `stripe-signature` over raw bytes with timestamp tolerance (`payment_intent.succeeded` settles).
+  - Paid amounts are enforced equal to the order; without configured keys orders stay local (staff confirm / generic webhook).
 - `GET /api/wallets/topup/orders?userId=&status=` — self or staff; non-privileged callers are pinned to their own orders.
 - `GET /api/wallets/topup/:orderId` — poll for kiosk QR screens (PENDING → SUCCESS/CANCELLED/FAILED).
 - `POST /api/wallets/topup/:orderId/confirm` `{ providerReference? }` (`wallet.manage`) — cash-counter reconcile. Credits via ledger key `topup_<orderId>` so double-clicks credit once.
@@ -113,3 +118,8 @@ Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `
 - `GET /api/visitors`, `GET /api/visitors/:id`, `POST /api/visitors/:id/revoke` (`attendance.read|manage`).
 - `POST /api/visitors/check-in` `{ token }` (`nfc.scan`) — single/multi-use gate entry, records an ENTRY scan + `visitor.checkin` socket event.
 - `GET /api/v/:token` — public gate verification, no login.
+
+## Expiry sweeps
+
+- Job runs on boot + every 5 min (`SWEEP_ENABLED=false` disables; skipped in tests): cancels `PENDING` top-up orders past `expiresAt`, expires visitor passes past `validTo`.
+- `POST /api/system/sweeps` (`settings.manage`) — manual run, returns `{ topupsCancelled, passesExpired }`.

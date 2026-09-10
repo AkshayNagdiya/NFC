@@ -22,6 +22,7 @@ import {
 import { cn } from '../lib/utils';
 import { useSocketLifecycle } from '../lib/socket';
 import { TopBar } from '../components/TopBar';
+import { useSwUpdate } from '../features/nfc/useSwUpdate';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
 
@@ -70,8 +71,22 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
   },
 ];
 
-function Brand({ collapsed }: { collapsed: boolean }): JSX.Element {
+function SwUpdateBanner(): JSX.Element | null {
+  const { available, apply } = useSwUpdate();
+  if (!available) return null;
   return (
+    <div className="mx-auto w-full max-w-[1360px] px-4 pt-4 sm:px-6 lg:px-8" role="status">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#D4A853]/40 bg-[#D4A853]/10 px-4 py-2.5 text-sm text-[#E5BE6B]">
+        <span>A new version is ready — update to get the latest scanner and fixes.</span>
+        <button onClick={apply} className="rounded-lg bg-[#D4A853] px-4 py-1.5 font-semibold text-black hover:bg-[#E5BE6B]">
+          Update now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Brand({ collapsed }: { collapsed: boolean }): JSX.Element {  return (
     <div className="flex h-16 items-center gap-3 px-4">
       <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-gradient-to-b from-[#F0D48A] via-[#D4A853] to-[#8F6A2E] shadow-[0_8px_20px_-6px_rgba(212,168,83,0.6)]">
         <Nfc size={18} className="text-[#1A1408]" strokeWidth={2.4} aria-hidden />
@@ -263,6 +278,7 @@ export function AppLayout(): JSX.Element {
       {/* ——— Main column ——— */}
       <div className={cn('flex min-h-screen flex-col transition-[padding] duration-300', collapsed ? 'lg:pl-[76px]' : 'lg:pl-[272px]')}>
         <TopBar />
+        <SwUpdateBanner />
         <main id="main-content" className="mx-auto w-full max-w-[1360px] flex-1 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           <div className="page-enter">
             <Outlet />

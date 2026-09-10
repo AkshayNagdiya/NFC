@@ -21,6 +21,11 @@ export const walletRoutes = Router();
 
 /** Gateway webhook is public (HMAC/shared-secret verified) — mount before auth. */
 walletRoutes.post('/topup/webhook', validate(topupWebhookSchema), topupController.webhook);
+walletRoutes.post('/topup/webhook/razorpay/callback', topupController.razorpayCallback);
+walletRoutes.post('/topup/webhook/razorpay', topupController.razorpayEvent);
+walletRoutes.post('/topup/webhook/stripe', topupController.stripeEvent);
+/** Provider availability for the UI — any authenticated user; before :orderId matching. */
+walletRoutes.get('/topup/config', requireAuth, topupController.config);
 
 walletRoutes.use(requireAuth);
 walletRoutes.get('/:userId', requirePerm('wallet.read'), validate(walletParamsSchema), walletController.get);

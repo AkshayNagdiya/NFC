@@ -3,7 +3,7 @@
  * - Network-first for /api (never serve stale scans/wallets).
  * - On Background Sync, poke open tabs to flush the IndexedDB scan queue.
  */
-const VERSION = 'airdata-v2';
+const VERSION = 'airdata-v3';
 const SHELL = [ '/', '/index.html', '/scanner', '/manifest.webmanifest' ];
 
 self.addEventListener('install', (event) => {

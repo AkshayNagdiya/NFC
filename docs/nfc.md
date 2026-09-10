@@ -66,3 +66,5 @@ NFC Reader → nfc-bridge → ws://localhost:8787 + http://localhost:8787 → Re
   (`scan-queue` tag) waking open tabs. Queue panel shows attempts, last error, last sync.
 - **PAYMENT is never queued** (scanner + POS): charging against an unknown balance is
   unsafe. Offline payments show an explicit error — retry online or take cash.
+- **Updates**: a new deploy installs a fresh worker in the background; the app shows an
+  "Update now" banner (hourly update checks) so long-lived kiosk tabs don't run stale code.

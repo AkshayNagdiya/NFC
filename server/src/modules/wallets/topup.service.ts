@@ -9,6 +9,16 @@ import { User } from '../users/user.model.js';
 import { emitToOrg } from '../../sockets/index.js';
 import { Payment } from './wallet.models.js';
 import { walletService } from './wallet.service.js';
+import {
+  createGatewayOrder,
+  gatewayConfig,
+  razorpaySecrets,
+  stripeSecrets,
+  verifyRazorpayCallback,
+  verifyRazorpayWebhook,
+  verifyStripeWebhook,
+  type LiveOrder,
+} from './gateway.js';
 
 type Provider = 'MANUAL' | 'UPI' | 'RAZORPAY' | 'STRIPE' | 'MOCK';
 
@@ -68,7 +78,13 @@ export const topupService = {
 
     const existing = await Payment.findOne({ organizationId: scope.organizationId, idempotencyKey: idemKey }).lean();
     if (existing) {
-      return { order: existing, replay: true, upiIntent: upiForOrder(existing, settings), qrPayload: upiForOrder(existing, settings) ?? String(existing._id) };
+      return {
+        order: existing,
+        replay: true,
+        upiIntent: upiForOrder(existing, settings),
+        qrPayload: upiForOrder(existing, settings) ?? String(existing._id),
+        gateway: await gatewayPayloadFor(existing),
+      };
     }
 
     const providerOrderId = `ord_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
@@ -95,9 +111,33 @@ export const topupService = {
       if ((e as { code?: number }).code === 11000) {
         const winner = await Payment.findOne({ organizationId: scope.organizationId, idempotencyKey: idemKey }).lean();
         if (!winner) throw new ApiError(500, 'INTERNAL_ERROR', 'Top-up order vanished');
-        return { order: winner, replay: true, upiIntent: upiForOrder(winner, settings), qrPayload: upiForOrder(winner, settings) ?? String(winner._id) };
+        return {
+          order: winner,
+          replay: true,
+          upiIntent: upiForOrder(winner, settings),
+          qrPayload: upiForOrder(winner, settings) ?? String(winner._id),
+          gateway: await gatewayPayloadFor(winner),
+        };
       }
       throw e;
+    }
+
+    // Live gateway order (Razorpay/Stripe). Without configured keys this stays
+    // local — staff confirm / generic webhook still settles it.
+    let gateway: LiveOrder | undefined;
+    if (provider === 'RAZORPAY' || provider === 'STRIPE') {
+      try {
+        gateway = await createGatewayOrder(provider, { amountMinor: input.amountMinor, reference, localOrderId: String(order._id) });
+      } catch (e) {
+        await Payment.updateOne({ _id: order._id }, { $set: { status: 'FAILED', providerReference: String((e as Error).message).slice(0, 160) } });
+        throw new ApiError(502, 'INTERNAL_ERROR', 'Payment gateway is unreachable — try UPI or pay at the counter.');
+      }
+      if (gateway.live) {
+        await Payment.updateOne(
+          { _id: order._id },
+          { $set: { providerOrderId: gateway.providerOrderId, metadata: { provider, gatewayLive: true } } },
+        );
+      }
     }
 
     const vpa = settings.upiPayeeVpa || env.UPI_PAYEE_VPA;
@@ -115,8 +155,13 @@ export const topupService = {
     });
     emitToOrg(scope.organizationId, 'wallet.topup', { orderId: String(order._id), userId, status: 'PENDING', amountMinor: input.amountMinor });
 
-    const plain = order.toObject();
-    return { order: plain, replay: false, upiIntent, qrPayload: upiIntent ?? String(order._id) };
+    const plain = (await Payment.findById(order._id).lean()) ?? order.toObject();
+    return { order: plain, replay: false, upiIntent, qrPayload: upiIntent ?? String(order._id), gateway };
+  },
+
+  /** Public (publishable) gateway config so the UI only offers wired providers. */
+  config() {
+    return gatewayConfig();
   },
 
   async get(auth: AuthContext, orderId: string) {
@@ -204,12 +249,130 @@ export const topupService = {
     if (input.status !== 'SUCCESS') throw new ApiError(400, 'VALIDATION_ERROR', 'Unknown webhook status');
     return finalizeOrder(orgId, order, { actorId: String(order.actorId), providerReference: input.providerReference, via: 'webhook' });
   },
+
+  /** Razorpay checkout.js callback (no raw body needed — fields HMAC). Public. */
+  async razorpayCallback(input: { providerOrderId?: string; paymentId?: string; signature?: string }) {
+    const { keySecret } = razorpaySecrets();
+    if (!keySecret) throw new ApiError(503, 'INTERNAL_ERROR', 'Razorpay is not configured');
+    const ok = verifyRazorpayCallback(
+      { orderId: input.providerOrderId ?? '', paymentId: input.paymentId ?? '', signature: input.signature ?? '' },
+      keySecret,
+    );
+    if (!ok) throw new ApiError(401, 'UNAUTHORIZED', 'Invalid Razorpay signature');
+    if (!input.providerOrderId || !input.paymentId) throw new ApiError(400, 'VALIDATION_ERROR', 'Missing Razorpay payment identifiers');
+    return settleLiveOrder(input.providerOrderId, { providerReference: input.paymentId, via: 'webhook' });
+  },
+
+  /** Razorpay server event (`payment.captured` / `payment.failed`). Public. */
+  async razorpayEvent(rawBody: Buffer, signature: string | undefined) {
+    const { webhookSecret } = razorpaySecrets();
+    if (!webhookSecret) throw new ApiError(503, 'INTERNAL_ERROR', 'Razorpay webhooks are not configured');
+    if (!verifyRazorpayWebhook(rawBody, signature, webhookSecret)) {
+      throw new ApiError(401, 'UNAUTHORIZED', 'Invalid Razorpay webhook signature');
+    }
+    let evt: { event?: string; payload?: { payment?: { entity?: Record<string, unknown> } } };
+    try {
+      evt = JSON.parse(rawBody.toString('utf8')) as typeof evt;
+    } catch {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Invalid webhook payload');
+    }
+    const entity = evt.payload?.payment?.entity;
+    const orderId = typeof entity?.order_id === 'string' ? entity.order_id : undefined;
+    if (!orderId) throw new ApiError(400, 'VALIDATION_ERROR', 'No Razorpay order in event');
+    if (evt.event === 'payment.failed') {
+      return failLiveOrder(orderId, typeof entity?.id === 'string' ? entity.id : undefined);
+    }
+    if (evt.event !== 'payment.captured' && evt.event !== 'payment.authorized') {
+      return { ignored: evt.event ?? 'unknown' };
+    }
+    return settleLiveOrder(orderId, {
+      providerReference: typeof entity?.id === 'string' ? entity.id : undefined,
+      expectedAmountMinor: typeof entity?.amount === 'number' ? entity.amount : undefined,
+      via: 'webhook',
+    });
+  },
+
+  /** Stripe server event (`payment_intent.succeeded` / `payment_failed`). Public. */
+  async stripeEvent(rawBody: Buffer, signature: string | undefined) {
+    const { webhookSecret } = stripeSecrets();
+    if (!webhookSecret) throw new ApiError(503, 'INTERNAL_ERROR', 'Stripe webhooks are not configured');
+    const parsed = verifyStripeWebhook(rawBody, signature, webhookSecret);
+    if (!parsed.ok) throw new ApiError(401, 'UNAUTHORIZED', 'Invalid Stripe webhook signature');
+    if (!parsed.providerOrderId) throw new ApiError(400, 'VALIDATION_ERROR', 'No PaymentIntent in event');
+    if (parsed.type === 'payment_intent.payment_failed') {
+      return failLiveOrder(parsed.providerOrderId, parsed.providerReference);
+    }
+    if (parsed.type !== 'payment_intent.succeeded') {
+      return { ignored: parsed.type ?? 'unknown' };
+    }
+    return settleLiveOrder(parsed.providerOrderId, {
+      providerReference: parsed.providerReference,
+      expectedAmountMinor: parsed.amountMinor,
+      via: 'webhook',
+    });
+  },
 };
 
 function upiForOrder(order: Record<string, unknown>, settings: { upiPayeeVpa?: string; upiPayeeName?: string }): string | null {
   const vpa = settings.upiPayeeVpa || env.UPI_PAYEE_VPA;
   const name = settings.upiPayeeName || env.UPI_PAYEE_NAME;
   return buildUpiIntent(order.amountMinor as number, String(order.reference ?? order._id), vpa, name);
+}
+
+/** Checkout payload for an existing order (intent replays included). */
+async function gatewayPayloadFor(order: Record<string, unknown>): Promise<LiveOrder | undefined> {
+  const provider = order.provider as string | undefined;
+  if (provider !== 'RAZORPAY' && provider !== 'STRIPE') return undefined;
+  const cfg = gatewayConfig();
+  if (provider === 'RAZORPAY') {
+    if (!cfg.razorpay.enabled) return { live: false, providerOrderId: String(order.providerOrderId ?? order._id) };
+    return { live: true, providerOrderId: String(order.providerOrderId), keyId: cfg.razorpay.keyId };
+  }
+  if (!cfg.stripe.enabled) return { live: false, providerOrderId: String(order.providerOrderId ?? order._id) };
+  // PaymentIntent client secrets are single-view: mint a fresh intent for the retry.
+  const fresh = await createGatewayOrder('STRIPE', {
+    amountMinor: order.amountMinor as number,
+    reference: String(order.reference ?? order._id),
+    localOrderId: String(order._id),
+  });
+  if (fresh.live) {
+    await Payment.updateOne({ _id: order._id }, { $set: { providerOrderId: fresh.providerOrderId } });
+  }
+  return fresh;
+}
+
+/** Settle by gateway order id, enforcing the paid amount matches the order. */
+async function settleLiveOrder(
+  providerOrderId: string,
+  opts: { providerReference?: string; expectedAmountMinor?: number; via?: string },
+) {
+  const order = await Payment.findOne({ providerOrderId }).lean();
+  if (!order) throw new ApiError(404, 'NOT_FOUND', 'Top-up order not found');
+  if (opts.expectedAmountMinor !== undefined && opts.expectedAmountMinor !== order.amountMinor) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Paid amount does not match the order');
+  }
+  return finalizeOrder(String(order.organizationId), order, {
+    actorId: String(order.actorId),
+    providerReference: opts.providerReference,
+    via: opts.via ?? 'webhook',
+  });
+}
+
+async function failLiveOrder(providerOrderId: string, providerReference?: string) {
+  const order = await Payment.findOne({ providerOrderId }).lean();
+  if (!order) throw new ApiError(404, 'NOT_FOUND', 'Top-up order not found');
+  const orgId = String(order.organizationId);
+  const failed = await Payment.findOneAndUpdate(
+    { _id: order._id, status: 'PENDING' },
+    { $set: { status: 'FAILED', providerReference } },
+    { new: true },
+  ).lean();
+  if (failed) {
+    emitToOrg(orgId, 'wallet.topup', { orderId: String(order._id), userId: String(order.userId), status: 'FAILED' });
+    return { order: failed, replay: false };
+  }
+  const current = await Payment.findById(order._id).lean();
+  return { order: current, replay: true };
 }
 
 async function finalizeOrder(

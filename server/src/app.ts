@@ -21,7 +21,13 @@ export function createApp() {
   );
   app.use(requestIdMiddleware);
   app.use(httpLogger);
-  app.use(express.json({ limit: '256kb' }));
+  // Keep the raw body for HMAC webhook verification (Stripe/Razorpay sign raw bytes).
+  app.use(express.json({
+    limit: '256kb',
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    },
+  }));
   app.use(cookieParser());
   app.use(
     rateLimit({

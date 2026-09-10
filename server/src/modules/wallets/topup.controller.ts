@@ -8,7 +8,18 @@ function webhookSecret(req: Request): string | undefined {
   return typeof q === 'string' ? q : undefined;
 }
 
+function rawBodyOf(req: Request): Buffer {
+  return (req as unknown as { rawBody?: Buffer }).rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
+}
+
 export const topupController = {
+  async config(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.json({ success: true, data: topupService.config(), requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
   async intent(req: Request, res: Response, next: NextFunction) {
     try {
       const out = await topupService.intent(req.auth!, req.params.userId, {
@@ -73,6 +84,41 @@ export const topupController = {
         providerReference: req.body?.providerReference,
         secret: webhookSecret(req),
       });
+      res.json({ success: true, data: out, requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+  /** Razorpay checkout.js callback — fields HMAC, no raw body needed. */
+  async razorpayCallback(req: Request, res: Response, next: NextFunction) {
+    try {
+      const out = await topupService.razorpayCallback({
+        providerOrderId: req.body?.razorpay_order_id ?? req.body?.providerOrderId,
+        paymentId: req.body?.razorpay_payment_id ?? req.body?.paymentId,
+        signature: req.body?.razorpay_signature ?? req.body?.signature,
+      });
+      res.json({ success: true, data: out, requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  /** Razorpay server event — HMAC over raw bytes. */
+  async razorpayEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const sig = req.headers['x-razorpay-signature'];
+      const out = await topupService.razorpayEvent(rawBodyOf(req), typeof sig === 'string' ? sig : undefined);
+      res.json({ success: true, data: out, requestId: req.requestId });
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  /** Stripe server event — timestamped HMAC over raw bytes. */
+  async stripeEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const sig = req.headers['stripe-signature'];
+      const out = await topupService.stripeEvent(rawBodyOf(req), typeof sig === 'string' ? sig : undefined);
       res.json({ success: true, data: out, requestId: req.requestId });
     } catch (e) {
       next(e);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../../lib/api';
 import { Badge, Button, Card, Field, Input, PageHeader } from '../../components/ui';
 
@@ -75,11 +76,18 @@ export function VisitorsPage(): JSX.Element {
         {issued && (
           <div className="rounded-lg border border-border p-3 text-sm" role="status">
             <p className="font-semibold">{issued.name} · {issued.kind}</p>
-            <p className="mt-1 break-all font-mono text-xs">{issued.token}</p>
-            <p className="mt-1 text-muted-foreground">Gate link: <span className="font-mono">{issued.checkinUrl}</span> — share or scan at entry.</p>
-            <div className="mt-2 flex gap-2">
-              <Button variant="secondary" onClick={() => navigator.clipboard?.writeText(issued.token)}>Copy code</Button>
-              <Button variant="secondary" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}${issued.checkinUrl}`)}>Copy link</Button>
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              <span className="rounded-lg bg-white p-2">
+                <QRCodeSVG value={`${window.location.origin}${issued.checkinUrl}`} size={160} aria-label="Gate pass QR" />
+              </span>
+              <div className="min-w-48 flex-1 space-y-2">
+                <p className="break-all font-mono text-xs">{issued.token}</p>
+                <p className="text-muted-foreground">Gate link: <span className="font-mono">{issued.checkinUrl}</span> — scan the QR at entry.</p>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => navigator.clipboard?.writeText(issued.token)}>Copy code</Button>
+                  <Button variant="secondary" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}${issued.checkinUrl}`)}>Copy link</Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
