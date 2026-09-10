@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { RefreshCw } from 'lucide-react';
 import { api } from '../../lib/api';
 import { inr } from '../../lib/format';
 import { newId } from '../../lib/utils';
@@ -274,7 +275,18 @@ export function PosPage(): JSX.Element {
 
         {settlement.data && settlement.data.recent.length > 0 && (
           <div>
-            <h3 className="mb-1 text-sm font-semibold">Recent sales</h3>
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Recent sales</h3>
+              <button
+                onClick={() => settlement.refetch()}
+                disabled={settlement.isFetching}
+                className="rounded border border-border p-1.5 hover:bg-muted disabled:opacity-50"
+                aria-label="Refresh recent sales"
+                title="Refresh recent sales"
+              >
+                <RefreshCw size={14} className={settlement.isFetching ? 'animate-spin' : ''} aria-hidden />
+              </button>
+            </div>
             <ul className="divide-y divide-border text-sm">
               {settlement.data.recent.map((s) => (
                 <li key={s._id} className="flex items-center justify-between gap-2 py-1.5">
