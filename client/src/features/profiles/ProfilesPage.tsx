@@ -37,7 +37,7 @@ export function ProfilesPage(): JSX.Element {
         actions={canManage ? <Button onClick={() => setEditing('new')}><Plus size={15} /> New profile</Button> : undefined}
       />
       <div className="flex flex-wrap gap-2">
-        <div className="min-w-52 flex-1">
+        <div className="min-w-100 flex-1">
           <Input placeholder="Search name or slug…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} aria-label="Search profiles" />
         </div>
       </div>
@@ -149,11 +149,10 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/60 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Tap profile">
-      <div className="m-auto grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-2xl border border-border bg-background lg:max-h-[calc(100vh-3rem)] lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto">
-          <div className="space-y-4 p-4 pb-3 sm:p-6 sm:pb-3">
-            <div className="flex items-start justify-between gap-2">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Tap profile">
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-1 gap-5 overflow-hidden rounded-2xl border border-border bg-background p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0">
+            <div className="mb-4 flex items-start justify-between gap-2">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">{initial ? 'Edit profile' : 'New profile'}</h2>
                 <p className="text-xs text-muted-foreground">{initial ? 'Changes go live instantly.' : 'Pick the holder, fill the card, save.'}</p>
@@ -162,7 +161,7 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
             </div>
 
             {!initial && (
-              <section aria-label="Holder">
+              <section aria-label="Holder" className="mb-5">
                 <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">1 · Holder *</h3>
                 {form.userId && userLabel ? (
                   <div className="flex items-center gap-2.5 rounded-xl border border-[#D4A853]/40 bg-[#D4A853]/[0.07] p-2.5">
@@ -212,7 +211,7 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
             </section>
 
             {initial && (
-              <div className="space-y-2 rounded-xl border border-border bg-muted/50 p-3">
+              <div className="mt-4 space-y-2 rounded-xl border border-border bg-muted/50 p-3">
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Write to NFC card</p>
                 <p className="break-all font-mono text-xs">{profileUrl(initial.slug)}</p>
                 <Button
@@ -224,10 +223,9 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
               </div>
             )}
 
-            {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
-            {!initial && !form.userId && <p className="text-xs text-muted-foreground">Select a holder above to enable saving.</p>}
-          </div>
-          <div className="sticky bottom-0 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:px-6">
+            {error && <p className="mt-3 text-sm text-red-500" role="alert">{error}</p>}
+            {!initial && !form.userId && <p className="mt-3 text-xs text-muted-foreground">Select a holder above to enable saving.</p>}
+          <div className="sticky bottom-0 -mx-4 mt-4 flex flex-col-reverse gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:pt-1">
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button variant="secondary" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
               <Button disabled={pending || (!initial && !form.userId) || !form.displayName.trim()} onClick={save} className="w-full sm:w-auto">
@@ -237,7 +235,7 @@ function ProfileDialog({ initial, onClose }: { initial: ProfileItem | null; onCl
           </div>
         </div>
 
-        <aside className="min-w-0 border-t border-border bg-black/20 p-4 sm:p-6 lg:border-l lg:border-t-0" aria-label="Live card preview">
+        <aside className="min-w-0 lg:sticky lg:top-0 lg:self-start" aria-label="Live card preview">
           <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Live preview</p>
           <CardPreview form={form} />
         </aside>
