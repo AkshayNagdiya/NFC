@@ -32,7 +32,17 @@ interface OrgSettings {
   slug: string;
   status: string;
   contactEmail?: string;
-  settings: { timezone: string; attendanceLateAfter: string; attendanceDayEnd: string; dupScanWindowMs: number };
+  settings: {
+    timezone: string;
+    attendanceLateAfter: string;
+    attendanceDayEnd: string;
+    dupScanWindowMs: number;
+    upiPayeeVpa?: string;
+    upiPayeeName?: string;
+    minTopupMinor?: number;
+    maxTopupMinor?: number;
+    posMenu?: { name: string; priceMinor: number }[];
+  };
 }
 
 type DbMode = 'local' | 'cluster';
@@ -360,11 +370,25 @@ export function SettingsPage(): JSX.Element {
   });
 
   const [form, setForm] = useState<Record<string, string> | null>(null);
+  const [menu, setMenu] = useState<{ name: string; price: string }[] | null>(null);
+  const menuRows = menu ?? (query.data ? (query.data.settings.posMenu ?? []).map((m) => ({ name: m.name, price: String(m.priceMinor / 100) })) : []);
+
+  function menuPayload(): { name: string; priceMinor: number }[] | undefined {
+    if (!menu) return undefined;
+    return menu
+      .map((r) => ({ name: r.name.trim(), priceMinor: Math.round(Number(r.price) * 100) }))
+      .filter((r) => r.name && Number.isFinite(r.priceMinor) && r.priceMinor > 0);
+  }
+
   const s = form ?? (query.data ? {
     timezone: query.data.settings.timezone,
     attendanceLateAfter: query.data.settings.attendanceLateAfter,
     attendanceDayEnd: query.data.settings.attendanceDayEnd,
     dupScanWindowMs: String(query.data.settings.dupScanWindowMs),
+    upiPayeeVpa: query.data.settings.upiPayeeVpa ?? '',
+    upiPayeeName: query.data.settings.upiPayeeName ?? '',
+    minTopupMinor: String((query.data.settings.minTopupMinor ?? 1000) / 100),
+    maxTopupMinor: String((query.data.settings.maxTopupMinor ?? 1000000) / 100),
   } : null);
 
   return (
@@ -390,8 +414,33 @@ export function SettingsPage(): JSX.Element {
             <Field label="School day ends (HH:mm)" htmlFor="s-end">
               <Input id="s-end" value={s.attendanceDayEnd} disabled={!canManage} onChange={(e) => setForm({ ...s, attendanceDayEnd: e.target.value })} />
             </Field>
+            <Field label="UPI payee VPA" htmlFor="s-vpa">
+              <Input id="s-vpa" value={s.upiPayeeVpa} disabled={!canManage} onChange={(e) => setForm({ ...s, upiPayeeVpa: e.target.value })} placeholder="school@upi" />
+            </Field>
+            <Field label="UPI payee name" htmlFor="s-vpaname">
+              <Input id="s-vpaname" value={s.upiPayeeName} disabled={!canManage} onChange={(e) => setForm({ ...s, upiPayeeName: e.target.value })} placeholder="Sunrise Academy" />
+            </Field>
+            <Field label="Min top-up (₹)" htmlFor="s-min">
+              <Input id="s-min" inputMode="decimal" value={s.minTopupMinor} disabled={!canManage} onChange={(e) => setForm({ ...s, minTopupMinor: e.target.value.replace(/[^0-9.]/g, '') })} />
+            </Field>
+            <Field label="Max top-up (₹)" htmlFor="s-max">
+              <Input id="s-max" inputMode="decimal" value={s.maxTopupMinor} disabled={!canManage} onChange={(e) => setForm({ ...s, maxTopupMinor: e.target.value.replace(/[^0-9.]/g, '') })} />
+            </Field>
           </div>
           <p className="text-xs leading-relaxed text-white/35">Late detection, early-exit, scan dedupe, and access windows all derive from these values. Changes are audited.</p>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Canteen menu (POS buttons)</p>
+            {menuRows.map((r, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input aria-label={`Item ${i + 1} name`} placeholder="Samosa" value={r.name} disabled={!canManage} onChange={(e) => setMenu(menuRows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
+                <Input aria-label={`Item ${i + 1} price`} inputMode="decimal" placeholder="₹" value={r.price} disabled={!canManage} onChange={(e) => setMenu(menuRows.map((x, j) => (j === i ? { ...x, price: e.target.value.replace(/[^0-9.]/g, '') } : x)))} className="w-28 font-mono" />
+                {canManage && <button onClick={() => setMenu(menuRows.filter((_, j) => j !== i))} className="rounded px-2 py-1 text-muted-foreground hover:bg-muted" aria-label={`Remove ${r.name || `item ${i + 1}`}`}>✕</button>}
+              </div>
+            ))}
+            {canManage && menuRows.length < 50 && (
+              <button onClick={() => setMenu([...menuRows, { name: '', price: '' }])} className="text-[12.5px] font-medium text-[#D4A853]/90 hover:text-[#E5BE6B]">+ Add item</button>
+            )}
+          </div>
           {save.isError && <p className="text-sm text-red-400" role="alert">{(save.error as Error).message}</p>}
           {saved && <p className="text-sm text-emerald-300" role="status">Settings saved.</p>}
           {canManage && (
@@ -404,6 +453,11 @@ export function SettingsPage(): JSX.Element {
                   attendanceLateAfter: s.attendanceLateAfter,
                   attendanceDayEnd: s.attendanceDayEnd,
                   dupScanWindowMs: Number(s.dupScanWindowMs),
+                  upiPayeeVpa: s.upiPayeeVpa,
+                  upiPayeeName: s.upiPayeeName,
+                  minTopupMinor: Math.round(Number(s.minTopupMinor) * 100),
+                  maxTopupMinor: Math.round(Number(s.maxTopupMinor) * 100),
+                  ...(menuPayload() !== undefined ? { posMenu: menuPayload() } : {}),
                 })}
               >
                 {save.isPending ? 'Saving…' : 'Save settings'}

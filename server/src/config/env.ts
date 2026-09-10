@@ -33,6 +33,10 @@ const envSchema = z.object({
   NFC_DUP_WINDOW_MS: z.coerce.number().default(3000),
   BCRYPT_ROUNDS: z.coerce.number().min(4).max(14).default(12),
   LOG_LEVEL: z.string().default('info'),
+  TOPUP_WEBHOOK_SECRET: z.string().default(''),
+  UPI_PAYEE_VPA: z.string().default(''),
+  UPI_PAYEE_NAME: z.string().default('AirData'),
+  TOPUP_ORDER_TTL_MIN: z.coerce.number().min(5).max(1440).default(30),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -66,6 +70,10 @@ function loadEnv(): Env {
       NFC_DUP_WINDOW_MS: Number(process.env.NFC_DUP_WINDOW_MS ?? 3000),
       BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS ?? 12),
       LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
+      TOPUP_WEBHOOK_SECRET: process.env.TOPUP_WEBHOOK_SECRET ?? '',
+      UPI_PAYEE_VPA: process.env.UPI_PAYEE_VPA ?? '',
+      UPI_PAYEE_NAME: process.env.UPI_PAYEE_NAME ?? 'AirData',
+      TOPUP_ORDER_TTL_MIN: Number(process.env.TOPUP_ORDER_TTL_MIN ?? 30),
     };
   }
   return parsed.data;

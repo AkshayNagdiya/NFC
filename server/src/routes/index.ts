@@ -14,7 +14,9 @@ import { settingsRoutes } from '../modules/organizations/organization.routes.js'
 import { databaseRoutes } from '../modules/system/database.routes.js';
 import { reportRoutes } from '../modules/reports/report.routes.js';
 import { transactionRoutes, walletRoutes } from '../modules/wallets/wallet.routes.js';
+import { posRoutes } from '../modules/pos/pos.routes.js';
 import { userRoutes } from '../modules/users/user.routes.js';
+import { visitorPublicRoutes, visitorRoutes } from '../modules/visitors/visitor.routes.js';
 
 export const apiRoutes = Router();
 
@@ -25,6 +27,7 @@ apiRoutes.use('/nfc', nfcRoutes);
 apiRoutes.use('/attendance', attendanceRoutes);
 apiRoutes.use('/access', accessRoutes);
 apiRoutes.use('/wallets', walletRoutes);
+apiRoutes.use('/pos', posRoutes);
 apiRoutes.use('/transactions', transactionRoutes);
 apiRoutes.use('/devices', deviceRoutes);
 apiRoutes.use('/locations', locationRoutes);
@@ -35,6 +38,8 @@ apiRoutes.use('/audit-logs', auditRoutes);
 apiRoutes.use('/settings', settingsRoutes);
 apiRoutes.use('/system/database', databaseRoutes);
 apiRoutes.use('/reports', reportRoutes);
+apiRoutes.use('/visitors', visitorRoutes);
+apiRoutes.use('/v', visitorPublicRoutes);
 
 apiRoutes.get('/health', (req, res) => {
   res.json({ success: true, data: { ok: true, time: new Date().toISOString() }, requestId: req.requestId });

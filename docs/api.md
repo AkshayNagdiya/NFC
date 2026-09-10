@@ -73,7 +73,6 @@ Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `
 - NFC `POST /api/nfc/scan` with `action: PAYMENT` + `amountMinor` debits synchronously; broke/frozen wallets → DENIED scan.
 
 ## Devices, locations, events
-
 - `GET /api/devices?status=&locationId=` (`devices.read`) — `health` is derived from heartbeats (stale > 5 min → OFFLINE).
 - `POST /api/devices`, `PATCH /api/devices/:id` (`devices.manage`); `GET /api/devices/:id/stats` (24h scans/failed).
 - `POST /api/devices/:id/heartbeat` (`devices.manage` or `nfc.scan` so kiosks can ping).
@@ -90,3 +89,27 @@ Money in integer minor units (paise). PENDING-first ledger + optimistic-locked `
 - `GET /api/settings` (any auth), `PUT /api/settings` (`settings.manage`) — timezone, late/early times, dupe window; audited.
 - `GET /api/reports/summary?from=&to=` — bands/scans/attendance/devices splits, active users, transaction volumes (`reports.read`).
 - `GET /api/reports/export?domain=bands|scans|attendance|access-events|transactions|audit&from=&to=` — CSV download, 5,000-row cap.
+
+## Online wallet top-up
+
+- `POST /api/wallets/:userId/topup/intent` `{ amountMinor, provider: UPI|MANUAL|RAZORPAY|STRIPE|MOCK, method?, idempotencyKey? }` — any holder for self, else `wallet.manage`. Same key replays the same PENDING order. Returns `{ order, upiIntent, qrPayload }`.
+- `GET /api/wallets/topup/orders?userId=&status=` — self or staff; non-privileged callers are pinned to their own orders.
+- `GET /api/wallets/topup/:orderId` — poll for kiosk QR screens (PENDING → SUCCESS/CANCELLED/FAILED).
+- `POST /api/wallets/topup/:orderId/confirm` `{ providerReference? }` (`wallet.manage`) — cash-counter reconcile. Credits via ledger key `topup_<orderId>` so double-clicks credit once.
+- `POST /api/wallets/topup/:orderId/cancel` — self or staff, PENDING only.
+- `POST /api/wallets/topup/webhook` `{ orderId?|providerOrderId?|reference?, status: SUCCESS|FAILED|CANCELLED, providerReference? }` — public, verified by `X-Webhook-Secret` when `TOPUP_WEBHOOK_SECRET` is set. Safe to retry; duplicate SUCCESS is a replay.
+- Socket `wallet.topup` on `org:{id}` for PENDING/SUCCESS/CANCELLED/FAILED.
+
+## Canteen POS + settlement
+
+- POS charges via existing `POST /api/nfc/scan` `{ action: PAYMENT, amountMinor, requestId }` — idempotent, debits synchronously. Never queue payments offline.
+- `GET /api/reports/settlement?date=YYYY-MM-DD` (`reports.read` or `nfc.scan`, so counter staff pass) — day bounds computed in the org timezone, plus sales/refund/top-up counts + volumes, net, avg ticket, denied payments, org-local hourly buckets, last 10 sales (`recent`), and the exact `bounds` used (feed them to CSV export).
+- `POST /api/pos/void` `{ transactionId, reason? }` (`nfc.scan`) — one-tap void for counter mistakes. Only today's successful `NFC payment` debits in the caller's org; everything else (top-ups, manual debits, older days) must use the finance refund flow. Idempotent per transaction.
+- Canteen catalog lives in org settings (`PUT /api/settings` `{ posMenu: [{ name, priceMinor }] }`, max 50 items).
+
+## Visitors & day QR
+
+- `POST /api/visitors` `{ kind: VISITOR|DAY_QR, name, phone?, purpose?, userId?, validTo?, maxUses? }` (`attendance.manage`) — valid today by default. Returns secret `token` + `checkinUrl: /v/:token`.
+- `GET /api/visitors`, `GET /api/visitors/:id`, `POST /api/visitors/:id/revoke` (`attendance.read|manage`).
+- `POST /api/visitors/check-in` `{ token }` (`nfc.scan`) — single/multi-use gate entry, records an ENTRY scan + `visitor.checkin` socket event.
+- `GET /api/v/:token` — public gate verification, no login.

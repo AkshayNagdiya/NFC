@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import { inr, parseRupees } from '../../lib/format';
 import { Badge, Button, Card, Field, Input, PageHeader, useConfirm } from '../../components/ui';
-import { useTransactions, useWallet, useWalletOp } from './walletApi';
+import { useTransactions, useTopupCancel, useTopupConfirm, useTopupIntent, useTopupOrder, useWallet, useWalletOp } from './walletApi';
 import { newId } from '../../lib/utils';
 
 interface UserRow { _id: string; firstName: string; lastName: string; email: string; }
@@ -83,6 +83,8 @@ export function WalletPage(): JSX.Element {
         </Card>
       )}
 
+      {userId && <TopupCard userId={userId} canConfirm={canManage} />}
+
       {txns.data && txns.data.items.length > 0 && (
         <Card>
           <h2 className="mb-2 font-semibold">Recent activity</h2>
@@ -153,5 +155,84 @@ function MoneyDialog({ op, userId, onClose }: { op: 'credit' | 'debit' | 'adjust
         </div>
       </div>
     </div>
+  );
+}
+
+function TopupCard({ userId, canConfirm }: { userId: string; canConfirm: boolean }): JSX.Element {
+  const [amount, setAmount] = useState('');
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const intent = useTopupIntent();
+  const live = useTopupOrder(orderId);
+  const confirm = useTopupConfirm();
+  const cancel = useTopupCancel();
+  const paise = parseRupees(amount);
+
+  const order = live.data ?? intent.data?.order;
+  const upiIntent = intent.data && intent.data.order._id === order?._id ? intent.data.upiIntent : null;
+  const pending = order?.status === 'PENDING';
+
+  return (
+    <Card className="space-y-3">
+      <div>
+        <h2 className="font-semibold">Online top-up</h2>
+        <p className="text-sm text-muted-foreground">Create a UPI order, collect payment, then confirm. Status polls automatically.</p>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-40 flex-1">
+          <Field label="Amount in ₹" htmlFor="t-amt" error={amount !== '' && paise === null ? 'Enter a valid amount' : undefined}>
+            <Input id="t-amt" inputMode="decimal" placeholder="e.g. 500.00" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} />
+          </Field>
+        </div>
+        <Button
+          disabled={paise === null || intent.isPending}
+          onClick={() => {
+            intent.mutate(
+              { userId, body: { amountMinor: paise, provider: 'UPI', idempotencyKey: `topup_${newId()}` } },
+              { onSuccess: (d) => setOrderId(d.order._id) },
+            );
+          }}
+        >
+          {intent.isPending ? 'Creating…' : 'Create UPI order'}
+        </Button>
+      </div>
+      {intent.isError && <p className="text-sm text-red-600" role="alert">{(intent.error as Error).message}</p>}
+
+      {order && (
+        <div className="rounded-lg border border-border p-3 text-sm">
+          <div className="flex items-center justify-between gap-2">
+            <span>Order <span className="font-mono">{order.reference ?? order._id}</span></span>
+            <Badge value={order.status} />
+          </div>
+          <p className="mt-1 text-2xl font-semibold">{inr(order.amountMinor)}</p>
+          {pending && upiIntent && (
+            <div className="mt-2 space-y-2">
+              <p className="break-all text-xs text-muted-foreground">{upiIntent}</p>
+              <div className="flex flex-wrap gap-2">
+                <a href={upiIntent} className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground">Open UPI app</a>
+                <Button variant="secondary" onClick={() => navigator.clipboard?.writeText(upiIntent)}>Copy link</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Show this screen at the kiosk — payer completes UPI, staff hits Confirm below (or gateway webhook auto-confirms).</p>
+            </div>
+          )}
+          {pending && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {canConfirm && (
+                <Button
+                  disabled={confirm.isPending}
+                  onClick={() => confirm.mutate({ orderId: order._id, providerReference: `COUNTER-${new Date().getTime()}` })}
+                >
+                  {confirm.isPending ? 'Confirming…' : 'Confirm payment received'}
+                </Button>
+              )}
+              <Button variant="secondary" disabled={cancel.isPending} onClick={() => cancel.mutate(order._id, { onSuccess: () => setOrderId(null) })}>Cancel</Button>
+            </div>
+          )}
+          {(confirm.isError || live.isError) && (
+            <p className="mt-2 text-sm text-red-600" role="alert">{((confirm.error ?? live.error) as Error).message}</p>
+          )}
+          {order.status === 'SUCCESS' && <p className="mt-2 text-sm text-green-700" role="status">Credited. Ledger updated exactly once.</p>}
+        </div>
+      )}
+    </Card>
   );
 }

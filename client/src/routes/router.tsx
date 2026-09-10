@@ -5,6 +5,7 @@ import { RequireAuth } from './guards';
 import { LoginPage } from '../features/auth/LoginPage';
 import { TapPage } from '../features/tap/TapPage';
 import { PublicProfilePage } from '../features/profiles/PublicProfilePage';
+import { VisitorPassPage } from '../features/visitors/VisitorPassPage';
 import { Skeleton } from '../components/ui';
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -26,6 +27,8 @@ const AuditPage = lazy(() => import('../features/audit/AuditPage').then((m) => (
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const ProfilesPage = lazy(() => import('../features/profiles/ProfilesPage').then((m) => ({ default: m.ProfilesPage })));
 const MyTapCardPage = lazy(() => import('../features/profiles/MyTapCardPage').then((m) => ({ default: m.MyTapCardPage })));
+const PosPage = lazy(() => import('../features/pos/PosPage').then((m) => ({ default: m.PosPage })));
+const VisitorsPage = lazy(() => import('../features/visitors/VisitorsPage').then((m) => ({ default: m.VisitorsPage })));
 
 function Lazy({ children }: { children: React.ReactNode }): JSX.Element {
   return (
@@ -41,6 +44,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/t/:token', element: <TapPage /> },
   { path: '/p/:slug', element: <PublicProfilePage /> },
+  { path: '/v/:token', element: <VisitorPassPage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -61,6 +65,8 @@ export const router = createBrowserRouter([
           { path: '/access', element: l(<AccessPage />) },
           { path: '/events', element: l(<EventsPage />) },
           { path: '/wallet', element: l(<WalletPage />) },
+          { path: '/pos', element: l(<PosPage />) },
+          { path: '/visitors', element: l(<VisitorsPage />) },
           { path: '/transactions', element: l(<TransactionsPage />) },
           { path: '/reports', element: l(<ReportsPage />) },
           { path: '/notifications', element: l(<NotificationsPage />) },

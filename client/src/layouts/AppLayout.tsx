@@ -42,6 +42,7 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
     section: 'Operate',
     items: [
       { to: '/scanner', label: 'NFC Scanner', icon: ScanLine, perm: 'nfc.scan', badge: 'LIVE' },
+      { to: '/visitors', label: 'Visitors & Day QR', icon: Users, perm: 'attendance.read' },
       { to: '/attendance', label: 'Attendance', icon: CalendarCheck, perm: 'attendance.read' },
       { to: '/access', label: 'Access Control', icon: ShieldCheck, perm: 'access.read' },
       { to: '/events', label: 'Events', icon: CalendarDays, perm: 'access.read' },
@@ -51,6 +52,7 @@ const NAV: { section: string; items: { to: string; label: string; icon: typeof U
     section: 'Money',
     items: [
       { to: '/wallet', label: 'Wallet', icon: Wallet, perm: 'wallet.read' },
+      { to: '/pos', label: 'Canteen POS', icon: ScanLine, perm: 'nfc.scan' },
       { to: '/transactions', label: 'Transactions', icon: Receipt, perm: 'transactions.read' },
     ],
   },

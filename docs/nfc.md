@@ -53,3 +53,16 @@ NFC Reader → nfc-bridge → ws://localhost:8787 + http://localhost:8787 → Re
   bridge unreachable, backend unavailable, unknown/invalid tag, access denied with reason.
 - Duplicate protection is server-side (configurable `dupScanWindowMs` per organization), so
   aggressive reader re-reads collapse into one scan row.
+
+## Offline-first scanner PWA
+
+- `/scanner` is installable (`/manifest.webmanifest` + `/sw.js` app-shell cache) — use
+  **Install app** in the status strip on the gate tablet for a fullscreen kiosk icon.
+- Network failures queue scans in **IndexedDB** (`airdata` → `scan-queue`), durable across
+  reloads; the v1 localStorage queue migrates automatically on first load.
+- Each queued scan keeps its original `requestId`; sync replays it so the server dedupes —
+  retries never double-count attendance/access.
+- Sync triggers: auto 4s after reconnect, **Sync now** button, and Background Sync
+  (`scan-queue` tag) waking open tabs. Queue panel shows attempts, last error, last sync.
+- **PAYMENT is never queued** (scanner + POS): charging against an unknown balance is
+  unsafe. Offline payments show an explicit error — retry online or take cash.

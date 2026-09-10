@@ -56,6 +56,8 @@ export const WalletTransaction: Model<WalletTransactionDoc> =
 
 export const PAYMENT_STATUSES = ['SUCCESS', 'PENDING', 'FAILED', 'REFUNDED', 'CANCELLED'] as const;
 
+export const TOPUP_PROVIDERS = ['MANUAL', 'UPI', 'RAZORPAY', 'STRIPE', 'MOCK'] as const;
+
 const paymentSchema = new Schema(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
@@ -67,11 +69,19 @@ const paymentSchema = new Schema(
     reference: { type: String, maxlength: 160, index: true },
     actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     metadata: { type: Schema.Types.Mixed },
+    /** Online top-up lifecycle. MANUAL = cash counter, UPI = upi:// intent, others = gateway orders. */
+    provider: { type: String, enum: TOPUP_PROVIDERS, default: 'MANUAL', index: true },
+    providerOrderId: { type: String, maxlength: 160, index: true },
+    /** Creation idempotency — double-submits replay the same order. Sparse so legacy rows stay valid. */
+    idempotencyKey: { type: String, maxlength: 128, index: true },
+    providerReference: { type: String, maxlength: 160 },
+    expiresAt: { type: Date, index: true },
   },
   { timestamps: true },
 );
 
 paymentSchema.index({ organizationId: 1, createdAt: -1 });
+paymentSchema.index({ organizationId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
 export type PaymentDoc = InferSchemaType<typeof paymentSchema> & { _id: unknown };
 export const Payment: Model<PaymentDoc> =

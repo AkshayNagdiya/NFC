@@ -14,3 +14,9 @@ export const exportSchema = z.object({
     to: z.string().datetime().optional(),
   }),
 });
+
+export const settlementSchema = z.object({
+  query: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').optional(),
+  }),
+});

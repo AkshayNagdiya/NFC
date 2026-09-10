@@ -69,3 +69,66 @@ export function useTransactions(params: { page: number; userId?: string; type?: 
     queryFn: async () => (await api.get('/transactions', { params: { ...params, pageSize: 12 } })).data.data as Paged<TxnItem>,
   });
 }
+
+export interface TopupOrder {
+  _id: string;
+  userId: string;
+  amountMinor: number;
+  method: string;
+  provider: string;
+  providerOrderId?: string;
+  status: string;
+  reference?: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export interface TopupIntentResult {
+  order: TopupOrder;
+  replay: boolean;
+  upiIntent: string | null;
+  qrPayload: string;
+}
+
+export function useTopupIntent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, body }: { userId: string; body: Record<string, unknown> }) =>
+      (await api.post(`/wallets/${userId}/topup/intent`, body)).data.data as TopupIntentResult,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['topup'] }),
+  });
+}
+
+export function useTopupOrder(orderId: string | null, enabledPolling = true) {
+  return useQuery({
+    queryKey: ['topup', orderId],
+    queryFn: async () => (await api.get(`/wallets/topup/${orderId}`)).data.data as TopupOrder,
+    enabled: !!orderId,
+    refetchInterval: (query) => {
+      if (!enabledPolling) return false;
+      const s = (query.state.data as TopupOrder | undefined)?.status;
+      return s === 'PENDING' ? 3000 : false;
+    },
+  });
+}
+
+export function useTopupConfirm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, providerReference }: { orderId: string; providerReference?: string }) =>
+      (await api.post(`/wallets/topup/${orderId}/confirm`, providerReference ? { providerReference } : {})).data.data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['topup'] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+}
+
+export function useTopupCancel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderId: string) => (await api.post(`/wallets/topup/${orderId}/cancel`)).data.data as TopupOrder,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['topup'] }),
+  });
+}
